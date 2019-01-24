@@ -8,7 +8,7 @@ set(groot, 'defaultAxesTickLabelInterpreter','latex');
 set(groot, 'defaultTextInterpreter','latex');
 set(groot, 'defaultLegendInterpreter','latex');
 
-directory = 'frames256_16/';
+directory = 'frames/';
 a = dir([directory '*.dat']);
 b = numel(a)
 lambda = 16;
