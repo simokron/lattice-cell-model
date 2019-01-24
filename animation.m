@@ -11,10 +11,10 @@ set(groot, 'defaultLegendInterpreter','latex');
 directory = 'frames/';
 a = dir([directory '*.dat']);
 b = numel(a)
-lambda = 16;
+lambda = 1;
 s = 1;
 
-pause(1)
+%pause(1)
 for n = 1:b
     frame = importdata([directory 'frame-' num2str(n) '.dat']);
     
