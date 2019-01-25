@@ -5,7 +5,7 @@
 module constants
 !-Input parameters----------------------------------------------------------
     implicit none    
-    integer,parameter :: L = 128, lambda = 1, numIters = 5*10E5, numFrames = 900
+    integer,parameter :: L = 128, lambda = 2, numIters = 5*10E5, numFrames = 900
     real,parameter :: beta = 0.6, p0 = 0.4, p1 = (1 - p0)/2, phi = 0
     integer :: sigma(L,L), n
     integer,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !The result is a 3 x 3 row matrix, i.e. the first three values correspond to the elements in the first row, etc.
@@ -42,7 +42,6 @@ contains
     end subroutine genSpins
 
     function cellCord(b)result(coordResult)
-        use constants
         integer :: t, coordResult(1:3)
 
         !Here we round down to the current integer (e.g. 0.8 would be 0) to find i_c. This first conditional is the edge-cases where e.g. on a 3 x 3 matrix, the last bond at the first row would have value 6, but then we'd get row 2 from the second conditional since 6/3 = 2.
@@ -69,7 +68,6 @@ contains
     end
 
     function spinCord(s, i_c, j_c)result(coordResult)
-        use constants
         integer :: coordResult(1:2)
 
         !Now we re-use the earlier ideas to get the 'coordinates' of the spin. Note that I no longer multiply by two, as there is only one "spin per spin" (i.e. we're not considering bonds). In the future I could make a "findI()" function, in which case it would probably make more sense to actually consider bonds in both cases to make the code more general. It shouldn't affect the outcome as the RNG works the same.
@@ -147,10 +145,12 @@ contains
         integer :: i_loop, j_loop, spin_loop
         integer, dimension(1:3) :: numSpins
 
+        numSpins = [0,0,0]
         !Now we just loop for all of the spins in the cell (excluding the selected one) and determine the type of spin.
         do i_loop = i_first, i_first + lambda - 1
             do j_loop = j_first, j_first + lambda - 1
                 spin_loop = sigma(i_loop, j_loop)
+                k = k + 1
                 if(spin_loop == -1) then
                     numSpins(1) = numSpins(1) + 1
                 elseif(spin_loop == 0) then
@@ -174,7 +174,6 @@ contains
     end
 
     function findFirst(i_c, j_c)result(firstResult)
-        use constants
         integer :: i_c, j_c
         integer, dimension(1:2) :: firstResult
         
@@ -197,12 +196,16 @@ contains
         
         !Now we just loop for all of the spins in the cell (excluding the selected one) and calculate the energy from the selected spin interacting with the "loop spin".
         !Here I reset the energy for each numIters loop.
-        E_current = E_current + J_str(cellSpins(1) + 2, cellSpins(2) + 2)
-        E_proposed = E_proposed + J_str(cellSpins(1) + 2, cellSpins(2) + 2)
+        E_current = E_current + J_str(cellSpins(1) + 2, cellSpins(2) + 2) &
+        + J_str(cellSpins(2) + 2, cellSpins(1) + 2)
+        E_proposed = E_proposed + J_str(cellSpins(2) + 2, cellSpins(1) + 2) &
+        + J_str(cellSpins(1) + 2, cellSpins(2) + 2)
         do h = 3, 5
             E_current = E_current + J_str(cellSpins(1) + 2, cellSpins(h) + 2)
+            E_proposed = E_proposed + J_str(cellSpins(2) + 2, cellSpins(h) + 2)
         enddo  
-        do h = 4, 8
+        do h = 6, 8
+            E_current = E_current + J_str(cellSpins(2) + 2, cellSpins(h) + 2)
             E_proposed = E_proposed + J_str(cellSpins(1) + 2, cellSpins(h) + 2)
         enddo
         
@@ -262,6 +265,8 @@ contains
             !Now we call the PBC() function which returns a 2 x 2 matrix with the "xy-cordinates" of the nearest-neighbours.
             PBCtemp = PBC(i_c, j_c, L/lambda)
             y_up = PBCTemp(1); y_down = PBCTemp(2); x_left = PBCTemp(3); x_right = PBCTemp(4)
+
+!            print *, "PBCTemp = ", PBCTemp
     
             !Next we find the position of the other cell associated with the bond, which we have denoted _p for 'pair'.
             !This is simple: "if we have a horisontal bond, the pair must be the cell to the right; otherwise it is the cell directly above".
@@ -269,11 +274,15 @@ contains
             !With this knowledge, we can also trivially determine the nearest-neighbours of the paired cell without using PBC() again since it adds lots of overhead.
             if(t == 0) then
                 i_p_c = i_c; j_p_c = x_right
-                y_p_up = y_up; y_p_down = y_down; x_p_left = i_c; x_p_right = x_right + 1
+!                y_p_up = y_up; y_p_down = y_down; x_p_left = i_c; x_p_right = x_right + 1
             else
                 i_p_c = y_up; j_p_c = j_c
-                y_p_up = y_up + 1; y_p_down = j_c; x_p_left = x_left; x_p_right = x_right 
+!                y_p_up = y_up + 1; y_p_down = j_c; x_p_left = x_left; x_p_right = x_right 
             endif
+            PBCtemp = PBC(i_p_c, j_p_c, L/lambda)
+            y_p_up = PBCTemp(1); y_p_down = PBCTemp(2); x_p_left = PBCTemp(3); x_p_right = PBCTemp(4)
+
+!            print *, "PBCTemp = ", PBCTemp
     
             !Now we randomly select a spin inside of the paired cell of the bond.
             call random_number(u); s = 1 + floor((lambda**2)*u) !This *should* be an integer between 1 and lambda^2 (i.e. the total number of spins in a cell).
@@ -283,7 +292,7 @@ contains
             i_p_s = spinTemp(1); j_p_s = spinTemp(2)
     
             spin_p = sigma(i_p_s, j_p_s) !Now we have the actual spin at i_p and j_p, which we store in spin_p.
-    
+
             !-Evaporation of top row--------------------------------------------
             if(i_c == 1 .and. spin == 0) then
                 call evap(i_s,j_s)
@@ -307,11 +316,11 @@ contains
             first = findFirst(i_c, j_c)
             
             !Then we determine the energy in that cell (both the current and the proposed energy).
-            Energy_c = energySelected(spin, spin_p, first(1), first(2), i_s, j_s)
+            energy_c = energySelected(spin, spin_p, first(1), first(2), i_s, j_s)
     
             !Now we do the exact same thing for the spins in the paired cell (note that spin and spin_p have the opposite meaning from the paired spin's point of view).
             first_p = findFirst(i_p_c, j_p_c)
-            Energy_p_c = energySelected(spin_p, spin, first_p(1), first_p(2), i_p_s, j_p_s)
+            energy_p_c = energySelected(spin_p, spin, first_p(1), first_p(2), i_p_s, j_p_s)
             
             !This gives us the current energy, as well as the proposed energy. Note that these energies are due to the spin move and do not correspond to cell-cell energies!
             E_current = energy_c(1) + energy_p_c(1)
@@ -322,34 +331,39 @@ contains
 
             !For the second conditional, we must consider the inter-cell energy. Luckily we can re-use some of the logic from before.
             !To start with, we must find the "xy-coordinates" of the nearest-neighbouring cells. 
-            if(t == 0) cellNeighbours = [[i_c,y_up], [i_c,y_down], [x_left,j_c], &
-                [i_p_c,y_p_up], [i_p_c,y_p_down], [i_p_c,x_p_right]]
-            if(t == 1) cellNeighbours = [[i_c,y_down], [x_left,j_c], [x_right,j_c], &
-                [i_p_c,y_p_up], [i_p_c,x_p_left], [i_p_c,x_p_right]]
+            if(t == 0) cellNeighbours = [[y_up,j_c], [y_down,j_c], [i_c,x_left], &
+                [y_p_up,j_p_c], [y_p_down,j_p_c], [i_p_c,x_p_right]]
+            if(t == 1) cellNeighbours = [[y_down,j_c], [i_c,x_left], [i_c,x_right], &
+                [y_p_up,j_p_c], [i_p_c,x_p_left], [i_p_c,x_p_right]]
 
             !Now we need to find the dominating spin in each cell
             cellFirsts([1,2]) = [first]; cellFirsts([3,4]) = [first_p]
-            do h = 5, 16, 2
+            do h = 5, 15, 2
                 cellFirsts([h,h+1]) = findFirst(cellNeighbours(h-4), cellneighbours(h-4+1))
             enddo
+!            print *, "t = ", t
+!            print *, "x_p_right = ", x_p_right
+!            print *, "test1 = ", [first, first_p, cellNeighbours]
+!            print *, "test2 = ", cellFirsts
+
             do h = 1, 8
                 cellSpins(h) = findSpins(cellFirsts(2*h-1),cellFirsts(2*h))
             enddo
+
+!            print *, "test = ", cellSpins
 
             !And the cell-cell energy if they change places
             cellEnergy = energyCells(cellSpins)
             dF = cellEnergy(2) - cellEnergy(1)
 
-!            print *, "test = ", cellFirsts(14)
-
             !Now we simply insert the acceptance criteria from the model.
             w = exp(-beta*dE);
             w_c = exp(-beta*dF);
             call random_number(P); !Compare to a pseudo-random number between 0 and 1.
-            
+
             !As can be seen from the nestled conditional, I avoid illegal moves over the top/bottom boundary by just bouncing back to pick a new spin if I am on the top row and have picked a vertical bond (there is no issue at the bottom boundary since the bonds point upwards).
             if(dE <= 0 .or. w >= P) then
-                if(dF <= 0 .or. w_c >= P) then
+                if(dF <= 0 .or. w_c >= P)then
                     if(i_c == 1 .and. t == 1) GO TO 10 !Avoid moves across top/bottom boundary.
                     sigma(i_s, j_s) = spin_p
                     sigma(i_p_s, j_p_s) = spin
