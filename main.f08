@@ -5,10 +5,11 @@
 module constants
 !-Input parameters----------------------------------------------------------
     implicit none    
-    integer,parameter :: L = 128, lambda = 2, numIters = 5*10E5, numFrames = 900
+    integer,parameter :: L = 128, lambda = 1, numIters = 5*10E6, numFrames = 900
     real,parameter :: beta = 0.6, p0 = 0.4, p1 = (1 - p0)/2, phi = 0
     integer :: sigma(L,L), n
-    integer,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !The result is a 3 x 3 row matrix, i.e. the first three values correspond to the elements in the first row, etc.
+!    integer,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !The result is a 3 x 3 row matrix, i.e. the first three values correspond to the elements in the first row, etc.
+    integer,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 6, 1, 0, 3, 6, 3, 0], shape(J_str))) !This will form a 'cap' of +1, cf. fig. 4 in Andrea's paper.
 end module
 
 module test
@@ -394,7 +395,7 @@ program main
     !start, finish, timeLeft etc. are only used to keep track of the time and to provide some nice prompts to the user.
     integer :: i, j, stat
     character(32) :: file_id, file_name
-    real :: start, finish, timeLeft, numMin, numSec
+    real :: start, finish, timeLeft, numHour, numMin, numSec
 
     call random_seed()
     call genSpins(L, sigma, p0, p1) !Generates a pseudo-random L x L "tenary spin matrix".
@@ -425,10 +426,14 @@ program main
             print '("Frame ", i6)',n
             call cpu_time(finish)
             timeLeft = ((finish-start)/n)*(numFrames-n)
-            if(timeLeft > 60) then
+            if(timeleft > 3600) then
+                numHour = aint(timeLeft/3600)
+                numMin = aint((timeLeft - (numHour)*3600)/60)
+                print '("Time to completion: ",i2," hour(s) and ",i2," minute(s).")',int(numHour),int(floor(numMin))
+            elseif(timeLeft > 60) then
                 numMin = aint(timeLeft/60)
                 numSec = timeLeft - (numMin)*60
-                print '("Time to completion: ",i3," minute(s) and ",i2," second(s).")',int(numMin),int(floor(numSec))
+                print '("Time to completion: ",i2," minute(s) and ",i2," second(s).")',int(numMin),int(floor(numSec))
             else
                 numSec = timeLeft
                 print '("Time to completion = ",i2," second(s).")',int(floor(numSec))

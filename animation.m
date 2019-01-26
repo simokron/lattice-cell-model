@@ -11,7 +11,7 @@ set(groot, 'defaultLegendInterpreter','latex');
 directory = 'frames/';
 a = dir([directory '*.dat']);
 b = numel(a)
-lambda = 2;
+lambda = 1;
 s = 1;
 
 %pause(1)
