@@ -5,7 +5,7 @@
 module constants
 !-Input parameters----------------------------------------------------------
     implicit none    
-    integer,parameter :: L = 128, lambda = 1, numIters = 5*10E4, numFrames = 900
+    integer,parameter :: L = 128, lambda = 4, numIters = 5*10E5, numFrames = 900
     real,parameter :: beta = 0.6, p0 = 0.4, p1 = (1 - p0)/2, phi = 0
     integer :: sigma(L,L), n
     integer,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !The result is a 3 x 3 row matrix, i.e. the first three values correspond to the elements in the first row, etc.
@@ -247,7 +247,7 @@ contains
         integer, dimension(1:16) :: cellFirsts
         integer, dimension(1:8) :: cellSpins
         real, dimension(1:2) :: Energy_c, Energy_p_c, cellEnergy
-        real :: b, s, u, dE, w, P, E_current, E_proposed
+        real :: b, s, u, dE, w, P, P_c, P_comb, E_current, E_proposed
     
         !This is the actual Metropolis algorithm. Again, pretty mussy ATM.
         do k = 1,numIters
@@ -366,15 +366,35 @@ contains
             w = exp(-beta*dE)
             w_c = exp(-beta*dF)
             call random_number(P) !Compare to a pseudo-random number between 0 and 1.
+            call random_number(P_c)
+            call random_number(P_comb)
 
             !As can be seen from the nestled conditional, I avoid illegal moves over the top/bottom boundary by just bouncing back to pick a new spin if I am on the top row and have picked a vertical bond (there is no issue at the bottom boundary since the bonds point upwards).
-            if(dE <= 0 .or. w >= P) then
-                if(dF <= 0 .or. w_c >= P)then
-                    if(i_c == 1 .and. t == 1) GO TO 10 !Avoid moves across top/bottom boundary.
+            if(i_c == 1 .and. t == 1) GO TO 10 !Avoid moves across top/bottom boundary.
+            if(dE <= 0 .and. dF <= 0) then
+!                print *, "1"
+                sigma(i_s, j_s) = spin_p
+                sigma(i_p_s, j_p_s) = spin
+            elseif(dE <= 0 .and. dF > 0) then
+                if(w_c >= P_c) then
+!                    print *, "2"
+                    sigma(i_s, j_s) = spin_p
+                    sigma(i_p_s, j_p_s) = spin
+                endif
+            elseif(dE > 0 .and. dF <= 0) then
+                if(w >= P) then
+!                    print *, "3"
+                    sigma(i_s, j_s) = spin_p
+                    sigma(i_p_s, j_p_s) = spin
+                endif
+            elseif(dE > 0 .and. dF > 0) then
+                if(w*w_c >= P_comb) then
+!                    print *, "4"
                     sigma(i_s, j_s) = spin_p
                     sigma(i_p_s, j_p_s) = spin
                 endif
             endif
+
         enddo
     
         return
