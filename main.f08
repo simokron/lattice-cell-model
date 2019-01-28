@@ -5,11 +5,11 @@
 module constants
 !-Input parameters----------------------------------------------------------
     implicit none    
-    integer,parameter :: L = 128, lambda = 1, numIters = 5*10E6, numFrames = 900
+    integer,parameter :: L = 128, lambda = 1, numIters = 5*10E4, numFrames = 900
     real,parameter :: beta = 0.6, p0 = 0.4, p1 = (1 - p0)/2, phi = 0
     integer :: sigma(L,L), n
-!    integer,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !The result is a 3 x 3 row matrix, i.e. the first three values correspond to the elements in the first row, etc.
-    integer,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 6, 1, 0, 3, 6, 3, 0], shape(J_str))) !This will form a 'cap' of +1, cf. fig. 4 in Andrea's paper.
+    integer,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !The result is a 3 x 3 row matrix, i.e. the first three values correspond to the elements in the first row, etc.
+!    integer,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 6, 1, 0, 3, 6, 3, 0], shape(J_str))) !This will form a 'cap' of +1, cf. fig. 4 in Andrea's paper.
 end module
 
 module test
@@ -141,10 +141,11 @@ contains
         return
     end
 
-    function findSpins(i_first, j_first)result(spinResults)
-        integer :: i_first, j_first, spinResults
+    function findSpins(i_first, j_first)result(spinResult)
+        integer :: i_first, j_first, spinResult
         integer :: i_loop, j_loop, spin_loop
-        integer, dimension(1:3) :: numSpins
+        real, dimension(1:3) :: numSpins
+        real, dimension(1:3) :: conc
 
         numSpins = [0,0,0]
         !Now we just loop for all of the spins in the cell (excluding the selected one) and determine the type of spin.
@@ -161,14 +162,18 @@ contains
                 endif
                     
             enddo
-        enddo  
+        enddo
         
-        if(maxval(numSpins) == numSpins(1)) then
-            spinResults = -1
-        elseif(maxval(numSpins) == numSpins(2)) then
-            spinResults = 0
+        conc = [numSpins(1), numSpins(2), numSpins(3)]/lambda**2
+
+        call random_number(u)
+
+        if(u < conc(1)) then
+            spinResult = -1
+        elseif(u < conc(1) + conc(2)) then
+            spinResult = 0
         else
-            spinResults = 1
+            spinResult = 1
         endif
         
         return
@@ -358,9 +363,9 @@ contains
             dF = cellEnergy(2) - cellEnergy(1)
 
             !Now we simply insert the acceptance criteria from the model.
-            w = exp(-beta*dE);
-            w_c = exp(-beta*dF);
-            call random_number(P); !Compare to a pseudo-random number between 0 and 1.
+            w = exp(-beta*dE)
+            w_c = exp(-beta*dF)
+            call random_number(P) !Compare to a pseudo-random number between 0 and 1.
 
             !As can be seen from the nestled conditional, I avoid illegal moves over the top/bottom boundary by just bouncing back to pick a new spin if I am on the top row and have picked a vertical bond (there is no issue at the bottom boundary since the bonds point upwards).
             if(dE <= 0 .or. w >= P) then
