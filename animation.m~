@@ -10,8 +10,8 @@ set(groot, 'defaultLegendInterpreter','latex');
 
 lambda = 4;
 directory = 'frames_2nd_4/';
-f = 'pdf'; %pdf or png!
-s = 9; %9 for saving!
+s = 9;
+lambda = 4;
 
 a = dir([directory '*.dat']);
 b = numel(a)
@@ -46,10 +46,10 @@ for n = 1:b
             pause(1)
             set(findall(gca, 'type', 'text'), 'visible', 'off')
             fig = gcf;
-            filename = sprintf(['export_c0_0%d.' f],str2num(strrep(num2str(round(c0,2)),'.','')));
+            filename = sprintf('export_c0_0%d.png',str2num(strrep(num2str(round(c0,2)),'.','')));
             fig.PaperUnits = 'points';
             fig.PaperPosition = [0 0 300 300];
-            print(filename,['-d' f]);
+            print(filename,'-dpng');
             set(findall(gca, 'type', 'text'), 'visible', 'on')
         end
         pause(1);
@@ -71,10 +71,10 @@ for n = 1:b
             if mod(round(c0,2),0.6) == 0 || mod(round(c0,2),0.5) == 0 || mod(round(c0,2),0.4) == 0 || mod(round(c0,2),0.38) == 0 || mod(round(c0,2),0.2) == 0 || mod(round(c0,2),0.1) == 0
                 set(findall(gca, 'type', 'text'), 'visible', 'off')
                 fig = gcf;
-                filename = sprintf(['export_c0_0%d.' f],str2num(strrep(num2str(round(c0,2)),'.','')));
+                filename = sprintf('export_c0_0%d.png',str2num(strrep(num2str(round(c0,2)),'.','')));
                 fig.PaperUnits = 'points';
                 fig.PaperPosition = [0 0 300 300];
-                print(filename,['-d' f]);
+                print(filename,'-dpng');
                 set(findall(gca, 'type', 'text'), 'visible', 'on')
             end
         end

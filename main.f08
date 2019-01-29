@@ -5,7 +5,7 @@
 module constants
 !-Input parameters----------------------------------------------------------
     implicit none    
-    integer,parameter :: L = 128, lambda = 4, numIters = 5*10E5, numFrames = 900
+    integer,parameter :: L = 128, lambda = 8, numIters = 1*10E6, numFrames = 900
     real,parameter :: beta = 0.6, p0 = 0.4, p1 = (1 - p0)/2, phi = 0
     integer :: sigma(L,L), n
     integer,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !The result is a 3 x 3 row matrix, i.e. the first three values correspond to the elements in the first row, etc.
@@ -192,7 +192,7 @@ contains
     end
 
     function energyCells(cellSpins)result(energyResult)
-        integer, dimension (1:8) :: cellSpins 
+        integer, dimension (1:10) :: cellSpins 
         real, dimension (1:2) :: energyResult
         integer :: h
         real :: E_current, E_proposed
@@ -204,15 +204,15 @@ contains
         !Here I reset the energy for each numIters loop.
         E_current = E_current + J_str(cellSpins(1) + 2, cellSpins(2) + 2) &
         + J_str(cellSpins(2) + 2, cellSpins(1) + 2)
-        E_proposed = E_proposed + J_str(cellSpins(2) + 2, cellSpins(1) + 2) &
-        + J_str(cellSpins(1) + 2, cellSpins(2) + 2)
+        E_proposed = E_proposed + J_str(cellSpins(9) + 2, cellSpins(10) + 2) &
+        + J_str(cellSpins(10) + 2, cellSpins(9) + 2)
         do h = 3, 5
             E_current = E_current + J_str(cellSpins(1) + 2, cellSpins(h) + 2)
-            E_proposed = E_proposed + J_str(cellSpins(2) + 2, cellSpins(h) + 2)
+            E_proposed = E_proposed + J_str(cellSpins(9) + 2, cellSpins(h) + 2)
         enddo  
         do h = 6, 8
             E_current = E_current + J_str(cellSpins(2) + 2, cellSpins(h) + 2)
-            E_proposed = E_proposed + J_str(cellSpins(1) + 2, cellSpins(h) + 2)
+            E_proposed = E_proposed + J_str(cellSpins(10) + 2, cellSpins(h) + 2)
         enddo
         
         energyResult = [E_current, E_proposed]
@@ -245,7 +245,7 @@ contains
         integer, dimension(1:3) :: cell1
         integer, dimension(1:12) :: cellNeighbours
         integer, dimension(1:16) :: cellFirsts
-        integer, dimension(1:8) :: cellSpins
+        integer, dimension(1:10) :: cellSpins
         real, dimension(1:2) :: Energy_c, Energy_p_c, cellEnergy
         real :: b, s, u, dE, w, P, P_c, P_comb, E_current, E_proposed
     
@@ -342,7 +342,7 @@ contains
             if(t == 1) cellNeighbours = [[y_down,j_c], [i_c,x_left], [i_c,x_right], &
                 [y_p_up,j_p_c], [i_p_c,x_p_left], [i_p_c,x_p_right]]
 
-            !Now we need to find the dominating spin in each cell
+            !Now we need to find the ''dominating spin'' in each cell
             cellFirsts([1,2]) = [first]; cellFirsts([3,4]) = [first_p]
             do h = 5, 15, 2
                 cellFirsts([h,h+1]) = findFirst(cellNeighbours(h-4), cellneighbours(h-4+1))
@@ -355,6 +355,13 @@ contains
             do h = 1, 8
                 cellSpins(h) = findSpins(cellFirsts(2*h-1),cellFirsts(2*h))
             enddo
+            
+            !And the ''dominating spin'' in the relevant cells should they switch (i.e.\ cell 1 and 2)
+            sigma(i_s, j_s) = spin_p; sigma(i_p_s, j_p_s) = spin
+            do h = 9, 10
+                cellspins(h) = findSpins(cellFirsts(2*h-17),cellFirsts(2*h-16))
+            enddo
+            sigma(i_s, j_s) = spin; sigma(i_p_s, j_p_s) = spin_p
 
 !            print *, "test = ", cellSpins
 
@@ -363,8 +370,8 @@ contains
             dF = cellEnergy(2) - cellEnergy(1)
 
             !Now we simply insert the acceptance criteria from the model.
-            w = exp(-beta*dE)
-            w_c = exp(-beta*dF)
+            w = exp(-beta*dE/lambda)
+            w_c = exp(-beta*dF/lambda)
             call random_number(P) !Compare to a pseudo-random number between 0 and 1.
             call random_number(P_c)
             call random_number(P_comb)
