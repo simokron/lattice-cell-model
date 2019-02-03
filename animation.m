@@ -44,7 +44,6 @@ for n = 1:b
         ax.XAxis.Visible = 'off';
         %set(gca,'visible','off');
         %set(findall(gca, 'type', 'text'), 'visible', 'on')
-        %tightfig;
         if s == 9
             MCS = numIters*(n-1)/(size(frame,1)*size(frame,2));
             pause(1)
@@ -70,7 +69,6 @@ for n = 1:b
         ax.LineWidth = 1.0;
         ax.YAxis.Visible = 'off';
         ax.XAxis.Visible = 'off';
-        %         tightfig;
         if s == 9 %&& n == 900
 %             k = 0.11
            for k = 1:8
