@@ -1,11 +1,11 @@
 !Author: simokron
 !
-!This is the lattice cell model implementation.
+!This is the lattice cell model implementation as part of my master's thesis.
 
 module constants
-!-Input parameters----------------------------------------------------------
+    !-Input parameters----------------------------------------------------------
     implicit none    
-    integer,parameter :: L = 128, lambda = 8, numIters = 1*10E6, numFrames = 900
+    integer,parameter :: L = 64, lambda = 1, numIters = 2**19, numFrames = 900
     real,parameter :: beta = 0.6, p0 = 0.4, p1 = (1 - p0)/2, phi = 0
     integer :: sigma(L,L), n
     integer,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !The result is a 3 x 3 row matrix, i.e. the first three values correspond to the elements in the first row, etc.
@@ -192,6 +192,8 @@ contains
     end
 
     function energyCells(cellSpins)result(energyResult)
+
+
         integer, dimension (1:10) :: cellSpins 
         real, dimension (1:2) :: energyResult
         integer :: h
@@ -370,8 +372,8 @@ contains
             dF = cellEnergy(2) - cellEnergy(1)
 
             !Now we simply insert the acceptance criteria from the model.
-            w = exp(-beta*dE/lambda)
-            w_c = exp(-beta*dF/lambda)
+            w = exp(-beta*dE)
+            w_c = exp(-beta*dF)
             call random_number(P) !Compare to a pseudo-random number between 0 and 1.
             call random_number(P_c)
             call random_number(P_comb)
@@ -405,7 +407,7 @@ contains
         enddo
     
         return
-        
+
     end subroutine metropolis
 
 end module test
@@ -440,6 +442,14 @@ program main
         if(stat == 0) close(10, status='delete') 
     enddo
 
+!    write(file_id, '(i0)') 170
+!    file_name = 'frames/frame-' // trim(adjustl(file_id)) // '.dat'
+!    open(10, file = trim(file_name), form = 'formatted')
+!    do i = 1,L
+!        read(10,*) (sigma(i,j), j = 1,L)
+!    enddo
+!    close(10)
+
     call cpu_time(start) !Keeps track of the time.
     !This is the main loop; it writes the files and calls the metropolis() subroutine to alter the spin matrix and it also informs the user about the number of frames, time remaining etc.
     do n = 1, numFrames
@@ -456,6 +466,7 @@ program main
         !Just some nice feedback to the user.
         if(mod(n, 10) == 0 .or. n == 2) then
             print '("Frame ", i6)',n
+            print '("Concentration of zeros ", F10.2)', real(count(sigma == 0))/real(L**2)
             call cpu_time(finish)
             timeLeft = ((finish-start)/n)*(numFrames-n)
             if(timeleft > 3600) then

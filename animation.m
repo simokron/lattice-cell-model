@@ -8,11 +8,14 @@ set(groot, 'defaultAxesTickLabelInterpreter','latex');
 set(groot, 'defaultTextInterpreter','latex');
 set(groot, 'defaultLegendInterpreter','latex');
 
-lambda = 4;
-directory = 'frames_2nd_4/';
+lambda = 1;
+directory = ['frames' '/'];
+%numIters = 1*10^6;
+numIters = 2^19;
 f = 'pdf'; %pdf or png!
-s = 9; %9 for saving!
+s = 1; %9 for saving!
 
+current = 0.4;
 a = dir([directory '*.dat']);
 b = numel(a)
 
@@ -43,10 +46,11 @@ for n = 1:b
         %set(findall(gca, 'type', 'text'), 'visible', 'on')
         %tightfig;
         if s == 9
+            MCS = numIters*(n-1)/(size(frame,1)*size(frame,2));
             pause(1)
             set(findall(gca, 'type', 'text'), 'visible', 'off')
             fig = gcf;
-            filename = sprintf(['export_c0_0%d.' f],str2num(strrep(num2str(round(c0,2)),'.','')));
+            filename = sprintf([num2str(lambda) '_' num2str(size(frame,1)) '_export_MCS_' num2str(round(MCS,0)) '_c0_0%d.' f],str2num(strrep(num2str(round(c0,2)),'.','')));
             fig.PaperUnits = 'points';
             fig.PaperPosition = [0 0 300 300];
             print(filename,['-d' f]);
@@ -67,16 +71,21 @@ for n = 1:b
         ax.YAxis.Visible = 'off';
         ax.XAxis.Visible = 'off';
         %         tightfig;
-        if s == 9
-            if mod(round(c0,2),0.6) == 0 || mod(round(c0,2),0.5) == 0 || mod(round(c0,2),0.4) == 0 || mod(round(c0,2),0.38) == 0 || mod(round(c0,2),0.2) == 0 || mod(round(c0,2),0.1) == 0
-                set(findall(gca, 'type', 'text'), 'visible', 'off')
-                fig = gcf;
-                filename = sprintf(['export_c0_0%d.' f],str2num(strrep(num2str(round(c0,2)),'.','')));
-                fig.PaperUnits = 'points';
-                fig.PaperPosition = [0 0 300 300];
-                print(filename,['-d' f]);
-                set(findall(gca, 'type', 'text'), 'visible', 'on')
-            end
+        if s == 9 %&& n == 900
+%             k = 0.11
+           for k = 1:8
+               if round(c0,2) == k/10 && k/10 < current
+                    current = k/10;
+                    MCS = numIters*(n-1)/(size(frame,1)*size(frame,2));
+                    set(findall(gca, 'type', 'text'), 'visible', 'off')
+                    fig = gcf;
+                    filename = sprintf([num2str(lambda) '_' num2str(size(frame,1)) '_export_MCS_' num2str(round(MCS,0)) '_c0_0%d.' f],str2num(strrep(num2str(round(c0,2)),'.','')));
+                    fig.PaperUnits = 'points';
+                    fig.PaperPosition = [0 0 300 300];
+                    print(filename,['-d' f]);
+                    set(findall(gca, 'type', 'text'), 'visible', 'on')
+               end
+           end
         end
         %pause(0.1)
         pause(0.0333); % 0.0167 for 60 FPS, 0.0333 for 30 FPS
