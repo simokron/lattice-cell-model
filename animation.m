@@ -8,7 +8,7 @@ set(groot, 'defaultAxesTickLabelInterpreter','latex');
 set(groot, 'defaultTextInterpreter','latex');
 set(groot, 'defaultLegendInterpreter','latex');
 
-lambda = 1;
+lambda = 4;
 directory = ['frames' '/'];
 %numIters = 1*10^6;
 numIters = 2^19;

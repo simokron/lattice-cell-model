@@ -6,8 +6,8 @@
 module constants
     implicit none
 
-    integer,parameter :: L = 64, lambda = 1, numIters = 2**19, numFrames = 900
-    real,parameter :: beta = 0.6, p0 = 0.4, p1 = (1 - p0)/2, phi = 0
+    integer,parameter :: L = 64, lambda = 4, numIters = 2**19, numFrames = 900
+    real,parameter :: beta = 0.3, p0 = 0.4, p1 = (1 - p0)/2, phi = 0, cutoffConc = 0.1
     integer :: sigma(L,L), n
     integer,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !The result is a 3 x 3 row matrix, i.e. the first three values correspond to the elements in the first row, etc.
 !    integer,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 6, 1, 0, 3, 6, 3, 0], shape(J_str))) !This will form a 'cap' of +1, cf. fig. 4 in Andrea's paper.
@@ -460,10 +460,12 @@ program main
     !start, finish, timeLeft etc. are only used to keep track of the time and to provide some nice prompts to the user.
     integer :: i, j, stat
     character(32) :: file_id, file_name
-    real :: start, finish, timeLeft, numHour, numMin, numSec
+    real :: start, finish, timeLeft, numHour, numMin, numSec, conc
 
     call random_seed()
     call genSpins(L, sigma, p0, p1) !Generates a pseudo-random L x L "tenary spin matrix".
+
+    conc = real(count(sigma == 0))/real(L**2)
 
     !This clears the frames/ directory!
     do n = 1, numFrames
@@ -484,7 +486,8 @@ program main
 
     call cpu_time(start) !Keeps track of the time.
     !This is the main loop; it writes the .dat files and calls the metropolis() subroutine to alter the spin matrix and it also informs the user about the number of frames, time remaining etc.
-    do n = 1, numFrames
+    n = 1
+    do while (conc >= cutoffConc)
         write(file_id, '(i0)') n
         file_name = 'frames/frame-' // trim(adjustl(file_id)) // '.dat'
         open(10, file = trim(file_name), form = 'formatted')
@@ -495,12 +498,14 @@ program main
         
         call metropolis(L, lambda, sigma, numIters, beta) !Returns the spin matrix after numIters.
 
+        conc = real(count(sigma == 0))/real(L**2)
+
         !Just some nice feedback to the user.
         if(mod(n, 10) == 0 .or. n == 2) then
             print '("Frame ", i6)',n
-            print '("Concentration of zeros ", F10.2)', real(count(sigma == 0))/real(L**2)
+            print '("Concentration of zeros ", F10.2)', conc
             call cpu_time(finish)
-            timeLeft = ((finish-start)/n)*(numFrames-n)
+            timeLeft = ((finish-start)/n)*(n/(p0-conc))*(conc-cutoffConc)
             if(timeleft > 3600) then
                 numHour = aint(timeLeft/3600)
                 numMin = aint((timeLeft - (numHour)*3600)/60)
@@ -514,6 +519,7 @@ program main
                 print '("Time to completion = ",i2," second(s).")',int(floor(numSec))
             endif
         endif
+        n = n + 1
     enddo
     
 end program main
