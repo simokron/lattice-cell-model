@@ -2,9 +2,10 @@
 !
 !This is the lattice cell model implementation as part of my master's thesis.
 
+!This module contains the parameters governing the simulation.
 module constants
-    !-Input parameters----------------------------------------------------------
-    implicit none    
+    implicit none
+
     integer,parameter :: L = 64, lambda = 1, numIters = 2**19, numFrames = 900
     real,parameter :: beta = 0.6, p0 = 0.4, p1 = (1 - p0)/2, phi = 0
     integer :: sigma(L,L), n
@@ -12,11 +13,12 @@ module constants
 !    integer,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 6, 1, 0, 3, 6, 3, 0], shape(J_str))) !This will form a 'cap' of +1, cf. fig. 4 in Andrea's paper.
 end module
 
-module test
+!This module contains the subroutine responsible for initialising the simulation.
+module initialisation
     use constants
-    
+
 contains
-    !Thus subroutine generates the pseudo-random spin matrix with appropriate concentrations.
+    !Thus subroutine generates the pseudo-random ternary spin matrix with appropriate concentrations.
     subroutine genSpins(L, sigma, p0, p1)
         integer :: L, sigma(L,L)
         real :: p0, p1
@@ -41,7 +43,14 @@ contains
         return
         
     end subroutine genSpins
+end module initialisation
 
+!This module contains the functions utilised by the dynamics module.
+module functions
+    use constants
+    
+contains
+    !This function takes a bond number 'b' and returns the "xy"-coordinates of the originating cell (the bonds point up and to the right) as well as the type of bond (t = 0 (1) for horisontal (vertical) type) as an array.
     function cellCord(b)result(coordResult)
         integer :: t, coordResult(1:3)
 
@@ -68,6 +77,8 @@ contains
         return
     end
 
+    !This function takes a spin number together with the coordinates of the cell in question and finds the indices of the associated spin within the appropriate cell as an array.
+    !The spin indices work with sigma(i_s, j_s).
     function spinCord(s, i_c, j_c)result(coordResult)
         integer :: coordResult(1:2)
 
@@ -90,10 +101,10 @@ contains
         return
     end
 
+    !This function takes a set of coordinates together with the maximum dimension (e.g. the length of a box) and returns the coordinates of the nearest-neighbours with PBC as an array.
     function PBC(i, j, length)result(PBCResult)
-        integer :: i, j, length
-        integer :: x_left, x_right, y_up, y_down
         integer, dimension(1:4) :: PBCResult
+        integer :: x_left, x_right, y_up, y_down
     
         !Next we define some stuff to simplify the PBC (for the cells!). Note again that the 'up' cell is at a row with a lesser value of i_c!
         y_up = i - 1; y_down = i + 1; x_left = j - 1; x_right = j + 1
@@ -115,12 +126,27 @@ contains
         return
     end
 
+    !This function takes the coordinates of a cell and returns the indices of the first spin within that cell (i.e. the one in the top left-hand corner of the cell) as an array.
+    function findFirst(i_c, j_c)result(firstResult)
+        integer, dimension(1:2) :: firstResult
+        
+        !Finding the first coordinates is trivial. For i, simply take the number of rows to a cell and multiply that by the cell index minus one (the minus one is due to the cell index starting at 1 rather than 0) and add 1 because otherwise you get the last row in the cell above, and analogous for j.
+        i_first = 1 + lambda*(i_c - 1)
+        j_first = 1 + lambda*(j_c - 1) 
+
+        firstResult = [i_first, j_first]
+
+        return
+    end
+
+    !This function takes the value of the currently considered spin together with the value of the proposed spin switch, as well as the coordinates of the first spin in the relevant cell and the indices of the spin in question and returns the current energy, along with the proposed energy should the spins be switched in an array.
     function energySelected(spin, spin_p, i_first, j_first, i_s, j_s)result(energyResult)
-        integer :: spin, spin_p, i_first, j_first, i_s, j_s
+        integer :: spin, spin_p, i_first, j_first, i_s, j_s !Needed to specify the type - Fortran gets real mad if you try and use non-integers for indices (and it seems to always assume real for non-specified types).
         real, dimension (1:2) :: energyResult
         integer :: i_loop, j_loop, spin_loop
         real :: E_current, E_proposed
 
+        !Reset the value before each run.
         E_current = 0
         E_proposed = 0
         
@@ -141,14 +167,18 @@ contains
         return
     end
 
+    !This function takes the index of the first spin in a cell and returns the 'spin' associated with that cell as an integer with value -1, 0 or +1.
+    !The 'spin' associated with a cell is determined from the concentrations - e.g. a 2 x 2 cell with 75% species +1 and 25% species 0 will in 75% of cases be considered a 'spin +1 cell' in the cell-cell interaction.
     function findSpins(i_first, j_first)result(spinResult)
-        integer :: i_first, j_first, spinResult
+        integer :: spinResult
         integer :: i_loop, j_loop, spin_loop
         real, dimension(1:3) :: numSpins
         real, dimension(1:3) :: conc
 
+        !Reset for each run.
         numSpins = [0,0,0]
-        !Now we just loop for all of the spins in the cell (excluding the selected one) and determine the type of spin.
+
+        !Now we loop for all of the spins in the cell and count the number of spins with each value.
         do i_loop = i_first, i_first + lambda - 1
             do j_loop = j_first, j_first + lambda - 1
                 spin_loop = sigma(i_loop, j_loop)
@@ -164,10 +194,11 @@ contains
             enddo
         enddo
         
+        !And convert the values to concentrations by dividing by lambda^2 (total number of spins in the cell).
         conc = [numSpins(1), numSpins(2), numSpins(3)]/lambda**2
 
+        !And compare the concentrations to a pseudo-random number between 0 and 1 to determine the 'spin of the cell'.
         call random_number(u)
-
         if(u < conc(1)) then
             spinResult = -1
         elseif(u < conc(1) + conc(2)) then
@@ -179,53 +210,60 @@ contains
         return
     end
 
-    function findFirst(i_c, j_c)result(firstResult)
-        integer :: i_c, j_c
-        integer, dimension(1:2) :: firstResult
-        
-        i_first = 1 + lambda*(i_c - 1)
-        j_first = 1 + lambda*(j_c - 1) 
-
-        firstResult = [i_first, j_first]
-
-        return
-    end
-
+    !This function takes the spin of the eight cells involved in the cell-cell nearest-neighbour interaction and returns the energy of the current configuration, as well as that after the proposed spin-switch as an array.
+    !The cellSpins array has 10 entries due to the stochastic nature of selecting the 'cell spins' - the first (last) two entries are the current (proposed) 'cell spins' according to findSpins(), whilst the remaining nearest-neighbour cells are invariant to the proposed spin-switch.
     function energyCells(cellSpins)result(energyResult)
-
-
         integer, dimension (1:10) :: cellSpins 
         real, dimension (1:2) :: energyResult
         integer :: h
-        real :: E_current, E_proposed
-
-        E_current = 0
-        E_proposed = 0
+        real :: F_current, F_proposed
+    
+        !Reset before every run.
+        F_current = 0
+        F_proposed = 0
         
-        !Now we just loop for all of the spins in the cell (excluding the selected one) and calculate the energy from the selected spin interacting with the "loop spin".
-        !Here I reset the energy for each numIters loop.
-        E_current = E_current + J_str(cellSpins(1) + 2, cellSpins(2) + 2) &
+        !Now we loop for all of the spins in the nearest-neighbour cell-cell interaction and determine the current and proposed energies.
+        F_current = F_current + J_str(cellSpins(1) + 2, cellSpins(2) + 2) &
         + J_str(cellSpins(2) + 2, cellSpins(1) + 2)
-        E_proposed = E_proposed + J_str(cellSpins(9) + 2, cellSpins(10) + 2) &
+        F_proposed = F_proposed + J_str(cellSpins(9) + 2, cellSpins(10) + 2) &
         + J_str(cellSpins(10) + 2, cellSpins(9) + 2)
         do h = 3, 5
-            E_current = E_current + J_str(cellSpins(1) + 2, cellSpins(h) + 2)
-            E_proposed = E_proposed + J_str(cellSpins(9) + 2, cellSpins(h) + 2)
+            F_current = F_current + J_str(cellSpins(1) + 2, cellSpins(h) + 2)
+            F_proposed = F_proposed + J_str(cellSpins(9) + 2, cellSpins(h) + 2)
         enddo  
         do h = 6, 8
-            E_current = E_current + J_str(cellSpins(2) + 2, cellSpins(h) + 2)
-            E_proposed = E_proposed + J_str(cellSpins(10) + 2, cellSpins(h) + 2)
+            F_current = F_current + J_str(cellSpins(2) + 2, cellSpins(h) + 2)
+            F_proposed = F_proposed + J_str(cellSpins(10) + 2, cellSpins(h) + 2)
         enddo
         
-        energyResult = [E_current, E_proposed]
+        energyResult = [F_current, F_proposed]
         
         return
     end
 
-    !This is the heart of the simulation; it essentially takes a spin matrix (state) and returns an updated version of the spin matrix after numIters iterations.
+end module functions
+
+!This module contains the dynamics in the simulation.
+module dynamics
+    use constants
+    use functions
+    
+contains
+    !This subroutine handles the evaporation of the top row by replacing the spin at (i,j) by +1 or -1 according to the appropriate concentration and returning the spin matrix.
+    subroutine evap(i, j)
+        !Simply get a random number between 0 and 1 and compare it to the normalised concentrations, preserving the initial ratios of -1 and +1 species.
+        call random_number(P)
+        if(P < p1/(1 - p0)) then
+            sigma(i,j) = 1
+        else
+            sigma(i,j) = -1
+        endif
+    end subroutine evap
+
+    !This subroutine is really the main part of the program. It essentially takes a spin matrix (state) and returns an updated version of the spin matrix after numIters iterations.
     !Note that I currently do not keep track of any observables like energy etc for the whole system, but it would be trivial to implement
     subroutine metropolis(L, lambda, sigma, numIters, beta)
-        !These were defined above.
+        !These were defined in the constants module.
         integer :: L, lambda, sigma(L,L), numIters
         real :: beta
     
@@ -251,7 +289,7 @@ contains
         real, dimension(1:2) :: Energy_c, Energy_p_c, cellEnergy
         real :: b, s, u, dE, w, P, P_c, P_comb, E_current, E_proposed
     
-        !This is the actual Metropolis algorithm. Again, pretty mussy ATM.
+        !This is the actual Metropolis algorithm. Again, somewhat messy.
         do k = 1,numIters
             !First we randomly select a bond.
     10      call random_number(u); b = 1 + floor(2*((L/lambda)**2)*u) !This yields an integer between 1 and 2*(L/lambda)^2 (i.e. the total number of bonds between cells). Whence b will be the currently considered bond number.
@@ -274,23 +312,17 @@ contains
             PBCtemp = PBC(i_c, j_c, L/lambda)
             y_up = PBCTemp(1); y_down = PBCTemp(2); x_left = PBCTemp(3); x_right = PBCTemp(4)
 
-!            print *, "PBCTemp = ", PBCTemp
-    
             !Next we find the position of the other cell associated with the bond, which we have denoted _p for 'pair'.
             !This is simple: "if we have a horisontal bond, the pair must be the cell to the right; otherwise it is the cell directly above".
             !That is, each cell has a vertical bond pointing upwards and a horisontal bond pointing to the right (it could equally well have been the left; physics is invariant to arbitrary coordinate definitions).
             !With this knowledge, we can also trivially determine the nearest-neighbours of the paired cell without using PBC() again since it adds lots of overhead.
             if(t == 0) then
                 i_p_c = i_c; j_p_c = x_right
-!                y_p_up = y_up; y_p_down = y_down; x_p_left = i_c; x_p_right = x_right + 1
             else
                 i_p_c = y_up; j_p_c = j_c
-!                y_p_up = y_up + 1; y_p_down = j_c; x_p_left = x_left; x_p_right = x_right 
             endif
             PBCtemp = PBC(i_p_c, j_p_c, L/lambda)
             y_p_up = PBCTemp(1); y_p_down = PBCTemp(2); x_p_left = PBCTemp(3); x_p_right = PBCTemp(4)
-
-!            print *, "PBCTemp = ", PBCTemp
     
             !Now we randomly select a spin inside of the paired cell of the bond.
             call random_number(u); s = 1 + floor((lambda**2)*u) !This *should* be an integer between 1 and lambda^2 (i.e. the total number of spins in a cell).
@@ -318,6 +350,8 @@ contains
                 GO TO 10
             endif
 30          continue
+
+            if(i_c == 1 .and. t == 1) GO TO 10 !Avoid moves across top/bottom boundary.
     
             !-Dynamics----------------------------------------------------------
             !First we find the "first" spin in the current cell (i.e. the "xy-coordinates" of that spin).
@@ -349,6 +383,7 @@ contains
             do h = 5, 15, 2
                 cellFirsts([h,h+1]) = findFirst(cellNeighbours(h-4), cellneighbours(h-4+1))
             enddo
+
 !            print *, "t = ", t
 !            print *, "x_p_right = ", x_p_right
 !            print *, "test1 = ", [first, first_p, cellNeighbours]
@@ -365,8 +400,6 @@ contains
             enddo
             sigma(i_s, j_s) = spin; sigma(i_p_s, j_p_s) = spin_p
 
-!            print *, "test = ", cellSpins
-
             !And the cell-cell energy if they change places
             cellEnergy = energyCells(cellSpins)
             dF = cellEnergy(2) - cellEnergy(1)
@@ -374,31 +407,27 @@ contains
             !Now we simply insert the acceptance criteria from the model.
             w = exp(-beta*dE)
             w_c = exp(-beta*dF)
-            call random_number(P) !Compare to a pseudo-random number between 0 and 1.
+
+            !Compare to a pseudo-random number between 0 and 1.
+            call random_number(P)
             call random_number(P_c)
             call random_number(P_comb)
 
-            !As can be seen from the nestled conditional, I avoid illegal moves over the top/bottom boundary by just bouncing back to pick a new spin if I am on the top row and have picked a vertical bond (there is no issue at the bottom boundary since the bonds point upwards).
-            if(i_c == 1 .and. t == 1) GO TO 10 !Avoid moves across top/bottom boundary.
             if(dE <= 0 .and. dF <= 0) then
-!                print *, "1"
                 sigma(i_s, j_s) = spin_p
                 sigma(i_p_s, j_p_s) = spin
             elseif(dE <= 0 .and. dF > 0) then
                 if(w_c >= P_c) then
-!                    print *, "2"
                     sigma(i_s, j_s) = spin_p
                     sigma(i_p_s, j_p_s) = spin
                 endif
             elseif(dE > 0 .and. dF <= 0) then
                 if(w >= P) then
-!                    print *, "3"
                     sigma(i_s, j_s) = spin_p
                     sigma(i_p_s, j_p_s) = spin
                 endif
             elseif(dE > 0 .and. dF > 0) then
                 if(w*w_c >= P_comb) then
-!                    print *, "4"
                     sigma(i_s, j_s) = spin_p
                     sigma(i_p_s, j_p_s) = spin
                 endif
@@ -408,12 +437,14 @@ contains
     
         return
 
-    end subroutine metropolis
+    end subroutine metropolis 
 
-end module test
+end module dynamics
 
+!The main program controls the simulation in the sense that it initialises the system, writes .dat files, informs the user about approximate time remaining etc.
 program main
-    use test
+    use initialisation
+    use dynamics
     implicit none
 
     !-Input parameters----------------------------------------------------------
@@ -442,6 +473,7 @@ program main
         if(stat == 0) close(10, status='delete') 
     enddo
 
+    !Debugging stuff - basically gives one the ability to continue an aborted simulation from a specified state.
 !    write(file_id, '(i0)') 170
 !    file_name = 'frames/frame-' // trim(adjustl(file_id)) // '.dat'
 !    open(10, file = trim(file_name), form = 'formatted')
@@ -451,7 +483,7 @@ program main
 !    close(10)
 
     call cpu_time(start) !Keeps track of the time.
-    !This is the main loop; it writes the files and calls the metropolis() subroutine to alter the spin matrix and it also informs the user about the number of frames, time remaining etc.
+    !This is the main loop; it writes the .dat files and calls the metropolis() subroutine to alter the spin matrix and it also informs the user about the number of frames, time remaining etc.
     do n = 1, numFrames
         write(file_id, '(i0)') n
         file_name = 'frames/frame-' // trim(adjustl(file_id)) // '.dat'
@@ -485,16 +517,3 @@ program main
     enddo
     
 end program main
-
-!Basically; "if on top row and the spin is zero, replace the spin with a +1 or -1 and pick a new spin".
-!Currently I use i:c to check - i.e. the whole cell is considered the top of the sample!
-subroutine evap(i_s, j_s)
-    use constants
-
-    call random_number(P)
-    if(P < p1/(1 - p0)) then
-        sigma(i_s,j_s) = 1
-    else
-        sigma(i_s,j_s) = -1
-    endif
-end subroutine evap
