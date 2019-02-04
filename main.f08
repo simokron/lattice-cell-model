@@ -508,13 +508,13 @@ program main
         if(mod(n, 10) == 0 .or. n == 2) then
 !            print '(/,"Frame ", 18x, i6)',n
             MCS = numIters*n/L**2
-            print '(/,"MCS ", 17x, F10.0)', MCS
-            print '("Concentration of zeros ", F10.2)', conc
+            print '(/,"MCS: ", 17x, F10.0)', MCS
+            print '("Concentration of zeros: ", F10.2)', conc
             call cpu_time(finish)
             numHour = aint(finish/3600)
             numMin = aint((finish - (numHour)*3600)/60)
             numSec = aint((finish - (numHour)*3600 - numMin*60))
-            print '("Total elapsed time ", 9x,i2," hour(s), ",i2," minute(s) and ",i2," second(s).")'&
+            print '("Total elapsed time: ", 9x,i2," hour(s), ",i2," minute(s) and ",i2," second(s).")'&
             ,int(numHour),int(floor(numMin)),int(floor(numSec))
         endif
         n = n + 1
@@ -524,7 +524,7 @@ program main
     numHour = aint(finish/3600)
     numMin = aint((finish - (numHour)*3600)/60)
     numSec = aint((finish - (numHour)*3600 - numMin*60))
-    print '(//,"Completed after ", 12x,i2," hour(s), ",i2," minute(s) and ",i2," second(s).")'&
+    print '(//,"Completed after: ", 12x,i2," hour(s), ",i2," minute(s) and ",i2," second(s).")'&
     ,int(numHour),int(floor(numMin)),int(floor(numSec))
     
 end program main
