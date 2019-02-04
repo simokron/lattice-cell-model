@@ -8,10 +8,9 @@ set(groot, 'defaultAxesTickLabelInterpreter','latex');
 set(groot, 'defaultTextInterpreter','latex');
 set(groot, 'defaultLegendInterpreter','latex');
 
-lambda = 4;
+lambda = 16;
 directory = ['frames' '/'];
-%numIters = 1*10^6;
-numIters = 2^19;
+numIters = 2^23;
 f = 'pdf'; %pdf or png!
 s = 1; %9 for saving!
 
@@ -24,6 +23,7 @@ for n = 1:b
     frame = importdata([directory 'frame-' num2str(n) '.dat']);
     
     c0 = 1 - nnz(frame)/numel(frame);
+    MCS = numIters*(n-1)/(size(frame,1)*size(frame,2));
     
     if n == 1
         mymap = [1 1 0
@@ -31,7 +31,7 @@ for n = 1:b
             0 0 1];
         colormap(mymap)
         imagesc(frame);
-        title(['Concentration of zeros = ' num2str(round(c0,2))])
+        title(['Concentration of zeros = ' num2str(round(c0,2)) '; MCS = ' num2str(MCS)])
         if lambda ~= 1
             xticks([0:lambda:size(frame,1)]+0.5)
             yticks([0:lambda:size(frame,2)]+0.5)
@@ -45,7 +45,6 @@ for n = 1:b
         %set(gca,'visible','off');
         %set(findall(gca, 'type', 'text'), 'visible', 'on')
         if s == 9
-            MCS = numIters*(n-1)/(size(frame,1)*size(frame,2));
             pause(1)
             set(findall(gca, 'type', 'text'), 'visible', 'off')
             fig = gcf;
@@ -58,7 +57,7 @@ for n = 1:b
         pause(1);
     else
         imagesc(frame);
-        title(['Concentration of zeros = ' num2str(round(c0,2))])
+        title(['Concentration of zeros = ' num2str(round(c0,2)) '; MCS = ' num2str(MCS)])
         if lambda ~= 1
             xticks([0:lambda:size(frame,1)]+0.5)
             yticks([0:lambda:size(frame,2)]+0.5)
@@ -71,10 +70,9 @@ for n = 1:b
         ax.XAxis.Visible = 'off';
         if s == 9 %&& n == 900
 %             k = 0.11
-           for k = 1:8
+           for k = 1:9
                if round(c0,2) == k/10 && k/10 < current
                     current = k/10;
-                    MCS = numIters*(n-1)/(size(frame,1)*size(frame,2));
                     set(findall(gca, 'type', 'text'), 'visible', 'off')
                     fig = gcf;
                     filename = sprintf([num2str(lambda) '_' num2str(size(frame,1)) '_export_MCS_' num2str(round(MCS,0)) '_c0_0%d.' f],str2num(strrep(num2str(round(c0,2)),'.','')));
@@ -86,7 +84,7 @@ for n = 1:b
            end
         end
         %pause(0.1)
-        pause(0.0333); % 0.0167 for 60 FPS, 0.0333 for 30 FPS
-        %pause(0.0167);
+        %pause(0.0333); % 0.0167 for 60 FPS, 0.0333 for 30 FPS
+        pause(0.0167);
     end
 end

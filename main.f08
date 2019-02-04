@@ -6,8 +6,8 @@
 module constants
     implicit none
 
-    integer,parameter :: L = 64, lambda = 4, numIters = 2**19, numFrames = 900
-    real,parameter :: beta = 0.3, p0 = 0.4, p1 = (1 - p0)/2, phi = 0, cutoffConc = 0.1
+    integer,parameter :: L = 64, lambda = 1, numIters = 2**19
+    real,parameter :: beta = 0.005, p0 = 0.4, p1 = (1 - p0)/2, phi = 0, cutoffConc = 0.1
     integer :: sigma(L,L), n
     integer,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !The result is a 3 x 3 row matrix, i.e. the first three values correspond to the elements in the first row, etc.
 !    integer,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 6, 1, 0, 3, 6, 3, 0], shape(J_str))) !This will form a 'cap' of +1, cf. fig. 4 in Andrea's paper.
@@ -460,7 +460,8 @@ program main
     !start, finish, timeLeft etc. are only used to keep track of the time and to provide some nice prompts to the user.
     integer :: i, j, stat
     character(32) :: file_id, file_name
-    real :: start, finish, timeLeft, numHour, numMin, numSec, conc
+    logical :: file_exists = .true.
+    real :: start, finish, numHour, numMin, numSec, conc, MCS
 
     call random_seed()
     call genSpins(L, sigma, p0, p1) !Generates a pseudo-random L x L "tenary spin matrix".
@@ -468,14 +469,17 @@ program main
     conc = real(count(sigma == 0))/real(L**2)
 
     !This clears the frames/ directory!
-    do n = 1, numFrames
+    n = 0
+    do while (file_exists .eqv. .true.)
+        n = n + 1
         write(file_id, '(i0)') n
         file_name = 'frames/frame-' // trim(adjustl(file_id)) // '.dat'
+        inquire(file = trim(file_name), exist = file_exists)
         open(10, iostat=stat, file = trim(file_name), form = 'formatted', status = 'old')
         if(stat == 0) close(10, status='delete') 
     enddo
 
-    !Debugging stuff - basically gives one the ability to continue an aborted simulation from a specified state.
+    !Debugging stuff - basically gives one the ability to continue an aborted simulation from a specified state (REMEMBER TO COMMENT OUT THE STUFF ABOVE - IT *WILL* REMOVE ALL OF THE FILES OTHERWISE!).
 !    write(file_id, '(i0)') 170
 !    file_name = 'frames/frame-' // trim(adjustl(file_id)) // '.dat'
 !    open(10, file = trim(file_name), form = 'formatted')
@@ -502,24 +506,25 @@ program main
 
         !Just some nice feedback to the user.
         if(mod(n, 10) == 0 .or. n == 2) then
-            print '("Frame ", i6)',n
+!            print '(/,"Frame ", 18x, i6)',n
+            MCS = numIters*n/L**2
+            print '(/,"MCS ", 17x, F10.0)', MCS
             print '("Concentration of zeros ", F10.2)', conc
             call cpu_time(finish)
-            timeLeft = ((finish-start)/n)*(n/(p0-conc))*(conc-cutoffConc)
-            if(timeleft > 3600) then
-                numHour = aint(timeLeft/3600)
-                numMin = aint((timeLeft - (numHour)*3600)/60)
-                print '("Time to completion: ",i2," hour(s) and ",i2," minute(s).")',int(numHour),int(floor(numMin))
-            elseif(timeLeft > 60) then
-                numMin = aint(timeLeft/60)
-                numSec = timeLeft - (numMin)*60
-                print '("Time to completion: ",i2," minute(s) and ",i2," second(s).")',int(numMin),int(floor(numSec))
-            else
-                numSec = timeLeft
-                print '("Time to completion = ",i2," second(s).")',int(floor(numSec))
-            endif
+            numHour = aint(finish/3600)
+            numMin = aint((finish - (numHour)*3600)/60)
+            numSec = aint((finish - (numHour)*3600 - numMin*60))
+            print '("Total elapsed time ", 9x,i2," hour(s), ",i2," minute(s) and ",i2," second(s).")'&
+            ,int(numHour),int(floor(numMin)),int(floor(numSec))
         endif
         n = n + 1
     enddo
+
+    call cpu_time(finish)
+    numHour = aint(finish/3600)
+    numMin = aint((finish - (numHour)*3600)/60)
+    numSec = aint((finish - (numHour)*3600 - numMin*60))
+    print '(//,"Completed after ", 12x,i2," hour(s), ",i2," minute(s) and ",i2," second(s).")'&
+    ,int(numHour),int(floor(numMin)),int(floor(numSec))
     
 end program main
