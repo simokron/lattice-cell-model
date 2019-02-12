@@ -6,11 +6,13 @@
 module constants
     implicit none
 
-    integer,parameter :: L = 64, lambda = 1, numIters = 2**19
-    real,parameter :: beta = 0.005, p0 = 0.4, p1 = (1 - p0)/2, phi = 0, cutoffConc = 0.1
+    integer,parameter :: L = 128, lambda = 1, numIters = 2**22
+    real,parameter :: beta = 0.6, p0 = 0.4, p1 = (1 - p0)/2, phi = 0, cutoffConc = -0.1
+!    real,parameter :: beta = 0.6, p0 = 0.4, p1 = 0.5, phi = 0, cutoffConc = 0.1
     integer :: sigma(L,L), n
     integer,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !The result is a 3 x 3 row matrix, i.e. the first three values correspond to the elements in the first row, etc.
 !    integer,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 6, 1, 0, 3, 6, 3, 0], shape(J_str))) !This will form a 'cap' of +1, cf. fig. 4 in Andrea's paper.
+!    integer,dimension(3, 3) :: J_str = transpose(reshape([0, 35, 15, 35, 0, 35, 15, 35, 0], shape(J_str))) !This is the 'strong repulsion' in Andrea's paper. It kinda works but I need much more energy..
 end module
 
 !This module contains the subroutine responsible for initialising the simulation.
@@ -144,7 +146,7 @@ contains
         integer :: spin, spin_p, i_first, j_first, i_s, j_s !Needed to specify the type - Fortran gets real mad if you try and use non-integers for indices (and it seems to always assume real for non-specified types).
         real, dimension (1:2) :: energyResult
         integer :: i_loop, j_loop, spin_loop
-        real :: E_current, E_proposed
+        real :: E_current, E_proposed!, d_ik
 
         !Reset the value before each run.
         E_current = 0
@@ -155,9 +157,10 @@ contains
         do i_loop = i_first, i_first + lambda - 1
             do j_loop = j_first, j_first + lambda - 1
                 if(i_loop == i_s .and. j_loop == j_s) GO TO 20
+!                d_ik = sqrt(real(i_s - i_loop)**2 + real(j_s - j_loop)**2)
                 spin_loop = sigma(i_loop, j_loop)
-                E_current = E_current + J_str(spin + 2, spin_loop + 2)
-                E_proposed = E_proposed + J_str(spin_p + 2, spin_loop + 2)
+                E_current = E_current + J_str(spin + 2, spin_loop + 2)/2
+                E_proposed = E_proposed + J_str(spin_p + 2, spin_loop + 2)/2
 20              CONTINUE
             enddo
         enddo  
@@ -223,17 +226,17 @@ contains
         F_proposed = 0
         
         !Now we loop for all of the spins in the nearest-neighbour cell-cell interaction and determine the current and proposed energies.
-        F_current = F_current + J_str(cellSpins(1) + 2, cellSpins(2) + 2) &
-        + J_str(cellSpins(2) + 2, cellSpins(1) + 2)
-        F_proposed = F_proposed + J_str(cellSpins(9) + 2, cellSpins(10) + 2) &
-        + J_str(cellSpins(10) + 2, cellSpins(9) + 2)
+        F_current = F_current + J_str(cellSpins(1) + 2, cellSpins(2) + 2)/2 &
+        + J_str(cellSpins(2) + 2, cellSpins(1) + 2)/2
+        F_proposed = F_proposed + J_str(cellSpins(9) + 2, cellSpins(10) + 2)/2 &
+        + J_str(cellSpins(10) + 2, cellSpins(9) + 2)/2
         do h = 3, 5
-            F_current = F_current + J_str(cellSpins(1) + 2, cellSpins(h) + 2)
-            F_proposed = F_proposed + J_str(cellSpins(9) + 2, cellSpins(h) + 2)
+            F_current = F_current + J_str(cellSpins(1) + 2, cellSpins(h) + 2)/2
+            F_proposed = F_proposed + J_str(cellSpins(9) + 2, cellSpins(h) + 2)/2
         enddo  
         do h = 6, 8
-            F_current = F_current + J_str(cellSpins(2) + 2, cellSpins(h) + 2)
-            F_proposed = F_proposed + J_str(cellSpins(10) + 2, cellSpins(h) + 2)
+            F_current = F_current + J_str(cellSpins(2) + 2, cellSpins(h) + 2)/2
+            F_proposed = F_proposed + J_str(cellSpins(10) + 2, cellSpins(h) + 2)/2
         enddo
         
         energyResult = [F_current, F_proposed]

@@ -8,9 +8,11 @@ set(groot, 'defaultAxesTickLabelInterpreter','latex');
 set(groot, 'defaultTextInterpreter','latex');
 set(groot, 'defaultLegendInterpreter','latex');
 
-lambda = 16;
-directory = ['frames' '/'];
-numIters = 2^23;
+directory = ['1_128_frames-v2-5-beta_06-numIters_2-22_long-running' '/'];
+lambda = 1;
+beta = 0.6;
+numIters = 2^22;
+
 f = 'pdf'; %pdf or png!
 s = 1; %9 for saving!
 
@@ -19,7 +21,7 @@ a = dir([directory '*.dat']);
 b = numel(a)
 
 %pause(1)
-for n = 1:b
+for n = 1:1:b
     frame = importdata([directory 'frame-' num2str(n) '.dat']);
     
     c0 = 1 - nnz(frame)/numel(frame);
@@ -48,7 +50,7 @@ for n = 1:b
             pause(1)
             set(findall(gca, 'type', 'text'), 'visible', 'off')
             fig = gcf;
-            filename = sprintf([num2str(lambda) '_' num2str(size(frame,1)) '_export_MCS_' num2str(round(MCS,0)) '_c0_0%d.' f],str2num(strrep(num2str(round(c0,2)),'.','')));
+            filename = sprintf([num2str(lambda) '_' num2str(size(frame,1)) '_beta_' strrep(num2str(beta),'.','') '_MCS_' num2str(round(MCS,0)) '_c0_0%d.' f],str2num(strrep(num2str(round(c0,2)),'.','')));
             fig.PaperUnits = 'points';
             fig.PaperPosition = [0 0 300 300];
             print(filename,['-d' f]);
@@ -75,7 +77,7 @@ for n = 1:b
                     current = k/10;
                     set(findall(gca, 'type', 'text'), 'visible', 'off')
                     fig = gcf;
-                    filename = sprintf([num2str(lambda) '_' num2str(size(frame,1)) '_export_MCS_' num2str(round(MCS,0)) '_c0_0%d.' f],str2num(strrep(num2str(round(c0,2)),'.','')));
+                    filename = sprintf([num2str(lambda) '_' num2str(size(frame,1)) '_beta_' strrep(num2str(beta),'.','') '_MCS_' num2str(round(MCS,0)) '_c0_0%d.' f],str2num(strrep(num2str(round(c0,2)),'.','')));
                     fig.PaperUnits = 'points';
                     fig.PaperPosition = [0 0 300 300];
                     print(filename,['-d' f]);
@@ -84,7 +86,7 @@ for n = 1:b
            end
         end
         %pause(0.1)
-        %pause(0.0333); % 0.0167 for 60 FPS, 0.0333 for 30 FPS
-        pause(0.0167);
+        pause(0.0333); % 0.0167 for 60 FPS, 0.0333 for 30 FPS
+        %pause(0.0167);
     end
 end

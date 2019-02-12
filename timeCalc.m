@@ -11,20 +11,47 @@ set(groot, 'defaultLegendInterpreter','latex');
 directory = ['frames' '/'];
 frame = importdata([directory 'frame-' num2str(1) '.dat']);
 
-numIters = 2^23;
+cT = [0 0 25];
+currentTime = cT(1)*60*60 + cT(2)*60 + cT(3);
+numIters = 2^18;
+cutoffConc = 0.0;
 
 a = dir([directory '*.dat']);
-b = numel(a)
+b = numel(a);
+
+fprintf(['Number of frames:              ' num2str(b)])
 
 for n = 1:b
     frame = importdata([directory 'frame-' num2str(n) '.dat']);
     c0(n) = 1 - nnz(frame)/numel(frame);
     MCS(n) = numIters*(n-1)/(size(frame,1)*size(frame,2));
+    if mod(n, 10) == 0 || n == 2
+        if n + 1 <= b
+            m = n;
+        else
+            m = n - 1;
+        end
+    end
 end
 
-f = fit(c0',MCS','linear')
+%% Test
+clc;
+clf;
+fprintf(['Number of frames:              ' num2str(b)])
 
-100*MCS(end)/f(0.1)
+f = fit(c0',MCS','exp1');
+
+percCompActual = 100*(cutoffConc/c0(end));
+percComp = 100*MCS(end)/f(cutoffConc);
+percCompCalc = 100*MCS(m+1)/f(cutoffConc);
+timeLeft = datestr((currentTime/percCompCalc)*(100-percCompCalc)/(24*60*60), 'HH:MM:SS');
+
+fprintf(['\nActual percentage complete:    ' num2str(round(percCompActual,0)) '%%\n'])
+
+if percCompCalc <= 100
+    fprintf(['\nEstimated percentage complete:  ' num2str(round(percComp,0)) '%%'])
+    fprintf(['\nEstimated time left:           ' timeLeft '\n'])
+end
 
 % Plotting
 %figure
@@ -32,7 +59,7 @@ h1 = axes;
 %set(gca,'FontSize',12)
 hold on
 plot(c0,MCS,'.k')
-plot(f)
+plot([cutoffConc:0.01:max(c0)],f([cutoffConc:0.01:max(c0)]),'-m')
 %plot(MCS,y,'.k')
 %plot(xp,f(xp),'-m')
 % plot([0 1.4],[42 42], '-.', 'Color', [0 0 0] + 0.5) % y = 25
@@ -46,10 +73,10 @@ set(h1, 'Xdir', 'reverse')
 xlabel('Concentration')
 ylabel('MCS')
 %title('Line profiles')
-legend('Data points','Exponential fit','Location','northwest')
+legend('Data points','Fit','Location','northwest')
 box on
 
-xlim([0.1, max(c0)]);
+xlim([cutoffConc, max(c0)]);
 %ylim([0, 30]);
 % 
 %xticks([29.66,50,65,80])
