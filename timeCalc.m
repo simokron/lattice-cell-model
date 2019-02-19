@@ -9,15 +9,18 @@ set(groot, 'defaultTextInterpreter','latex');
 set(groot, 'defaultLegendInterpreter','latex');
 
 directory = ['frames' '/'];
+a = dir([directory '*.dat']);
+T = struct2table(a);
+sortedT = sortrows(T, 'date');
+sortedA = table2struct(sortedT);
+b = numel(a);
+
 frame = importdata([directory 'frame-' num2str(1) '.dat']);
 
-cT = [0 0 25];
-currentTime = cT(1)*60*60 + cT(2)*60 + cT(3);
-numIters = 2^18;
-cutoffConc = 0.0;
-
-a = dir([directory '*.dat']);
-b = numel(a);
+cT = datetime(getfield(sortedA(b),'date'))-datetime(getfield(sortedA(1),'date'));
+currentTime = seconds(cT);
+numIters = 2^23;
+cutoffConc = 0.1;
 
 fprintf(['Number of frames:              ' num2str(b)])
 
@@ -34,12 +37,12 @@ for n = 1:b
     end
 end
 
-%% Test
+%% Fitting section - ONLY RERUN THIS tO CHANGE FIT TYPE!
 clc;
 clf;
 fprintf(['Number of frames:              ' num2str(b)])
 
-f = fit(c0',MCS','exp1');
+f = fit(c0',MCS','exp2');
 
 percCompActual = 100*(cutoffConc/c0(end));
 percComp = 100*MCS(end)/f(cutoffConc);

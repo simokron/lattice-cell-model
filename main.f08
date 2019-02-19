@@ -6,13 +6,14 @@
 module constants
     implicit none
 
-    integer,parameter :: L = 128, lambda = 1, numIters = 2**22
-    real,parameter :: beta = 0.6, p0 = 0.4, p1 = (1 - p0)/2, phi = 0, cutoffConc = -0.1
-!    real,parameter :: beta = 0.6, p0 = 0.4, p1 = 0.5, phi = 0, cutoffConc = 0.1
+    integer,parameter :: L = 256, lambda = 1, numIters = 2**23
+    real,parameter :: beta = 0.6, p0 = 0.4, p1 = (1 - p0)/2, phi = 0, cutoffConc = 0.1
+    logical,parameter :: cellCell = .true., constSeed = .true., FBC = .false.
     integer :: sigma(L,L), n
     integer,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !The result is a 3 x 3 row matrix, i.e. the first three values correspond to the elements in the first row, etc.
 !    integer,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 6, 1, 0, 3, 6, 3, 0], shape(J_str))) !This will form a 'cap' of +1, cf. fig. 4 in Andrea's paper.
 !    integer,dimension(3, 3) :: J_str = transpose(reshape([0, 35, 15, 35, 0, 35, 15, 35, 0], shape(J_str))) !This is the 'strong repulsion' in Andrea's paper. It kinda works but I need much more energy..
+!    integer,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 6, 1, -2, 1, 6, 1, -2], shape(J_str))) !This is the 'strong repulsion' in Andrea's paper. It kinda works but I need much more energy..
 end module
 
 !This module contains the subroutine responsible for initialising the simulation.
@@ -20,6 +21,27 @@ module initialisation
     use constants
 
 contains
+    !This subroutine sets up the RNG for the session. If constSeed .eqv. .true., it will use a predefined seed (for debugging).
+    subroutine setupRNG()
+        integer :: seedConst(33) = (/(i, i=1,33, 1)/)
+        integer :: i, n, clock
+        integer, dimension(:), allocatable :: seed
+
+        if(constSeed .eqv. .true.) then
+            call random_seed(put=seedConst)
+        else
+            call random_seed(size = n)
+            allocate(seed(n))
+          
+            call system_clock(count = clock)
+          
+            seed = clock + 37 * (/ (i - 1, i = 1, n) /)
+            call random_seed(put = seed)
+          
+            deallocate(seed)
+        endif
+    end subroutine setupRNG
+    
     !Thus subroutine generates the pseudo-random ternary spin matrix with appropriate concentrations.
     subroutine genSpins(L, sigma, p0, p1)
         integer :: L, sigma(L,L)
@@ -27,7 +49,7 @@ contains
     
         integer :: i, j
         real :: u
-    
+
         do i = 1,L
             do j = 1,L
                 call random_number(u)
@@ -52,7 +74,7 @@ module functions
     use constants
     
 contains
-    !This function takes a bond number 'b' and returns the "xy"-coordinates of the originating cell (the bonds point up and to the right) as well as the type of bond (t = 0 (1) for horisontal (vertical) type) as an array.
+    !This function takes a bond number 'b' and returns the "ij"-coordinates of the originating cell (the bonds point up and to the right) as well as the type of bond (t = 0 (1) for horisontal (vertical) type) as an array.
     function cellCord(b)result(coordResult)
         integer :: t, coordResult(1:3)
 
@@ -74,6 +96,7 @@ contains
             j_c = (int(b)+1)/2 - (L/lambda)*(i_c-1)
         endif
     
+        !Note that the spin matrix is formatted according to row-column so spin(1,2) would be the spin at row 1, column 2. I.e. i_c represents the 'y' coordinate and j_c represents the 'x' coordinate.
         coordResult = [i_c, j_c, t]
 
         return
@@ -244,6 +267,82 @@ contains
         return
     end
 
+    function energyCellsBottom(cellSpins,t)result(energyResult)
+        integer, dimension (1:10) :: cellSpins 
+        integer :: t
+        
+        real, dimension (1:2) :: energyResult
+        integer :: h
+        real :: F_current, F_proposed
+    
+        !Reset before every run.
+        F_current = 0
+        F_proposed = 0
+        
+        !Now we loop for all of the spins in the nearest-neighbour cell-cell interaction and determine the current and proposed energies.
+        F_current = F_current + J_str(cellSpins(1) + 2, cellSpins(2) + 2)/2 &
+        + J_str(cellSpins(2) + 2, cellSpins(1) + 2)/2
+        F_proposed = F_proposed + J_str(cellSpins(9) + 2, cellSpins(10) + 2)/2 &
+        + J_str(cellSpins(10) + 2, cellSpins(9) + 2)/2
+
+        if(t == 0) then
+            h = 3
+                F_current = F_current + J_str(cellSpins(1) + 2, cellSpins(h) + 2)/2
+                F_proposed = F_proposed + J_str(cellSpins(9) + 2, cellSpins(h) + 2)/2
+            h = 5
+                F_current = F_current + J_str(cellSpins(1) + 2, cellSpins(h) + 2)/2
+                F_proposed = F_proposed + J_str(cellSpins(9) + 2, cellSpins(h) + 2)/2
+            do h = 6, 8
+                F_current = F_current + J_str(cellSpins(2) + 2, cellSpins(h) + 2)/2
+                F_proposed = F_proposed + J_str(cellSpins(10) + 2, cellSpins(h) + 2)/2
+            enddo
+        else
+            do h = 3, 4
+                F_current = F_current + J_str(cellSpins(1) + 2, cellSpins(h) + 2)/2
+                F_proposed = F_proposed + J_str(cellSpins(9) + 2, cellSpins(h) + 2)/2
+            enddo
+            do h = 7, 8
+                F_current = F_current + J_str(cellSpins(2) + 2, cellSpins(h) + 2)/2
+                F_proposed = F_proposed + J_str(cellSpins(10) + 2, cellSpins(h) + 2)/2
+            enddo
+        endif
+        
+        energyResult = [F_current, F_proposed]
+        
+        return
+    end
+
+    function energyCellsTop(cellSpins)result(energyResult)
+        integer, dimension (1:10) :: cellSpins 
+        
+        real, dimension (1:2) :: energyResult
+        integer :: h
+        real :: F_current, F_proposed
+    
+        !Reset before every run.
+        F_current = 0
+        F_proposed = 0
+        
+        !Now we loop for all of the spins in the nearest-neighbour cell-cell interaction and determine the current and proposed energies.
+        F_current = F_current + J_str(cellSpins(1) + 2, cellSpins(2) + 2)/2 &
+        + J_str(cellSpins(2) + 2, cellSpins(1) + 2)/2
+        F_proposed = F_proposed + J_str(cellSpins(9) + 2, cellSpins(10) + 2)/2 &
+        + J_str(cellSpins(10) + 2, cellSpins(9) + 2)/2
+
+        do h = 4, 5
+            F_current = F_current + J_str(cellSpins(1) + 2, cellSpins(h) + 2)/2
+            F_proposed = F_proposed + J_str(cellSpins(9) + 2, cellSpins(h) + 2)/2
+        enddo
+        do h = 6, 7
+            F_current = F_current + J_str(cellSpins(2) + 2, cellSpins(h) + 2)/2
+            F_proposed = F_proposed + J_str(cellSpins(10) + 2, cellSpins(h) + 2)/2
+        enddo
+        
+        energyResult = [F_current, F_proposed]
+        
+        return
+    end function energyCellsTop
+
 end module functions
 
 !This module contains the dynamics in the simulation.
@@ -375,37 +474,48 @@ contains
             dE = E_proposed - E_current
 
             !For the second conditional, we must consider the inter-cell energy. Luckily we can re-use some of the logic from before.
-            !To start with, we must find the "xy-coordinates" of the nearest-neighbouring cells. 
-            if(t == 0) cellNeighbours = [[y_up,j_c], [y_down,j_c], [i_c,x_left], &
-                [y_p_up,j_p_c], [y_p_down,j_p_c], [i_p_c,x_p_right]]
-            if(t == 1) cellNeighbours = [[y_down,j_c], [i_c,x_left], [i_c,x_right], &
-                [y_p_up,j_p_c], [i_p_c,x_p_left], [i_p_c,x_p_right]]
+            if(lambda == 1 .or. cellCell .eqv. .true.) then
+                !To start with, we must find the "xy-coordinates" of the nearest-neighbouring cells.
+                if(t == 0) cellNeighbours = [[y_up,j_c], [i_c,x_left], [y_down,j_c], &
+                   [y_p_down,j_p_c], [i_p_c,x_p_right], [y_p_up,j_p_c]]
+                if(t == 1) cellNeighbours = [[i_c,x_left], [y_down,j_c], [i_c,x_right], &
+                    [i_p_c,x_p_right], [y_p_up,j_p_c], [i_p_c,x_p_left]]
+    
+                !Now we need to find the ''dominating spin'' in each cell
+                cellFirsts([1,2]) = [first]; cellFirsts([3,4]) = [first_p]
+                do h = 5, 15, 2
+                    cellFirsts([h,h+1]) = findFirst(cellNeighbours(h-4), cellneighbours(h-4+1))
+                enddo
+    
+    !            print *, "t = ", t
+    !            print *, "x_p_right = ", x_p_right
+    !            print *, "test1 = ", [first, first_p, cellNeighbours]
+    !            print *, "test2 = ", cellFirsts
+    
+                do h = 1, 8
+                    cellSpins(h) = findSpins(cellFirsts(2*h-1),cellFirsts(2*h))
+                enddo
+                
+                !And the ''dominating spin'' in the relevant cells should they switch (i.e.\ cell 1 and 2)
+                sigma(i_s, j_s) = spin_p; sigma(i_p_s, j_p_s) = spin
+                do h = 9, 10
+                    cellspins(h) = findSpins(cellFirsts(2*h-17),cellFirsts(2*h-16))
+                enddo
+                sigma(i_s, j_s) = spin; sigma(i_p_s, j_p_s) = spin_p
 
-            !Now we need to find the ''dominating spin'' in each cell
-            cellFirsts([1,2]) = [first]; cellFirsts([3,4]) = [first_p]
-            do h = 5, 15, 2
-                cellFirsts([h,h+1]) = findFirst(cellNeighbours(h-4), cellneighbours(h-4+1))
-            enddo
-
-!            print *, "t = ", t
-!            print *, "x_p_right = ", x_p_right
-!            print *, "test1 = ", [first, first_p, cellNeighbours]
-!            print *, "test2 = ", cellFirsts
-
-            do h = 1, 8
-                cellSpins(h) = findSpins(cellFirsts(2*h-1),cellFirsts(2*h))
-            enddo
-            
-            !And the ''dominating spin'' in the relevant cells should they switch (i.e.\ cell 1 and 2)
-            sigma(i_s, j_s) = spin_p; sigma(i_p_s, j_p_s) = spin
-            do h = 9, 10
-                cellspins(h) = findSpins(cellFirsts(2*h-17),cellFirsts(2*h-16))
-            enddo
-            sigma(i_s, j_s) = spin; sigma(i_p_s, j_p_s) = spin_p
-
-            !And the cell-cell energy if they change places
-            cellEnergy = energyCells(cellSpins)
-            dF = cellEnergy(2) - cellEnergy(1)
+                !And the cell-cell energy if they change places
+                if(i_c == L/lambda .and. FBC .eqv. .true.) then
+                    cellEnergy = energyCellsBottom(cellSpins,t)
+                elseif(i_c == 1 .and. FBC .eqv. .true.) then
+                    cellEnergy = energyCellsTop(cellSpins)
+                else
+                    cellEnergy = energyCells(cellSpins)
+                endif
+                dF = cellEnergy(2) - cellEnergy(1)
+            else
+                !!!DISABLES CELL-CELL INTERACTION!!!
+                dF = 0 
+            endif
 
             !Now we simply insert the acceptance criteria from the model.
             w = exp(-beta*dE)
@@ -466,7 +576,7 @@ program main
     logical :: file_exists = .true.
     real :: start, finish, numHour, numMin, numSec, conc, MCS
 
-    call random_seed()
+    call setupRNG()
     call genSpins(L, sigma, p0, p1) !Generates a pseudo-random L x L "tenary spin matrix".
 
     conc = real(count(sigma == 0))/real(L**2)
@@ -494,7 +604,7 @@ program main
     call cpu_time(start) !Keeps track of the time.
     !This is the main loop; it writes the .dat files and calls the metropolis() subroutine to alter the spin matrix and it also informs the user about the number of frames, time remaining etc.
     n = 1
-    do while (conc >= cutoffConc)
+    do while (conc > cutoffConc)
         write(file_id, '(i0)') n
         file_name = 'frames/frame-' // trim(adjustl(file_id)) // '.dat'
         open(10, file = trim(file_name), form = 'formatted')
