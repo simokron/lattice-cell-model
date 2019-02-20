@@ -9,15 +9,15 @@ set(groot, 'defaultTextInterpreter','latex');
 set(groot, 'defaultLegendInterpreter','latex');
 
 directory = ['frames' '/'];
-lambda = 1;
-beta = 0.6;
-numIters = 2^23;
+lambda = 4;
+beta = 0.2;
+numIters = 2^20;
 
-f = 'pdf'; %pdf or png!
-s = 1; %9 for saving!
-current = 1.0; %relates to saving - largest concentration to save (usually best keps at 1.0)
+f = 'png'; %pdf or png!
+export = false; %Turns on the export!
+current = 1.0; %relates to exporting - largest concentration to save (usually best keps at 1.0)
 
-sequence = false; %true for whole sequence
+sequence = true; %true for whole sequence
 once = false; %false for currently running simulations
 
 a = dir([directory '*.dat']);
@@ -65,7 +65,7 @@ while go
             ax.XAxis.Visible = 'off';
             %set(gca,'visible','off');
             %set(findall(gca, 'type', 'text'), 'visible', 'on')
-            if s == 9
+            if export == true
                 pause(1)
                 set(findall(gca, 'type', 'text'), 'visible', 'off')
                 fig = gcf;
@@ -90,7 +90,7 @@ while go
             ax.LineWidth = 1.0;
             ax.YAxis.Visible = 'off';
             ax.XAxis.Visible = 'off';
-            if s == 9 %&& n == 900
+            if export == true %&& n == 900
                 %             k = 0.11
                 for k = 1:9
                     if round(c0,2) == k/10 && k/10 < current

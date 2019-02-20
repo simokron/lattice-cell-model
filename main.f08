@@ -6,17 +6,20 @@
 module constants
     implicit none
 
-    integer,parameter :: L = 256, lambda = 1, numIters = 2**23
-    real,parameter :: beta = 0.6, p0 = 0.4, p1 = (1 - p0)/2, phi = 0, cutoffConc = 0.1
+    integer,parameter :: L = 128, lambda = 4, numIters = 2**20
+    real,parameter :: beta = 0.2, p0 = 0.4, p1 = (1 - p0)/2, phi = 0, cutoffConc = 0.1
     logical,parameter :: cellCell = .true., constSeed = .true., FBC = .false.
     integer :: sigma(L,L), n
+!    real,dimension(3, 3) :: J_str
+!    J_str(1,1)=0.;J_str(1,2)=1.;J_str(1,3)=6.;J_str(2,1)=1.;J_str(2,2)=0.;J_str(2,3)=1.;J_str(3,1)=6.;J_str(3,2)=1.;J_str(3,3)=0.;
+!    integer,dimension(3, 3) :: J_str = transpose(reshape([0, 2, 3, 2, 0, 2, 3, 2, 0], shape(J_str))) !The result is a 3 x 3 row matrix, i.e. the first three values correspond to the elements in the first row, etc.
     integer,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !The result is a 3 x 3 row matrix, i.e. the first three values correspond to the elements in the first row, etc.
 !    integer,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 6, 1, 0, 3, 6, 3, 0], shape(J_str))) !This will form a 'cap' of +1, cf. fig. 4 in Andrea's paper.
 !    integer,dimension(3, 3) :: J_str = transpose(reshape([0, 35, 15, 35, 0, 35, 15, 35, 0], shape(J_str))) !This is the 'strong repulsion' in Andrea's paper. It kinda works but I need much more energy..
 !    integer,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 6, 1, -2, 1, 6, 1, -2], shape(J_str))) !This is the 'strong repulsion' in Andrea's paper. It kinda works but I need much more energy..
 end module
 
-!This module contains the subroutine responsible for initialising the simulation.
+!This module contains the subroutines responsible for initialising the simulation.
 module initialisation
     use constants
 
