@@ -8,7 +8,7 @@ set(groot, 'defaultAxesTickLabelInterpreter','latex');
 set(groot, 'defaultTextInterpreter','latex');
 set(groot, 'defaultLegendInterpreter','latex');
 
-directory = ['1_256_frames-v2-FBC-beta_06-numIters_2-23' '/'];
+directory = ['frames' '/'];
 
 go = true; tempPause = true;
 while go
@@ -81,11 +81,14 @@ while go
     xlabel('Concentration')
     ylabel('MCS')
     %title('Line profiles')
+    if percCompCalc <= 100
+        title(['Estimated time left: ' num2str(timeLeft)])
+    end
     legend('Data points','Fit','Location','northwest')
     box on
     
     xlim([cutoffConc, max(c0)]);
-    %ylim([0, 30]);
+    ylim([0 inf]);
     %
     %xticks([29.66,50,65,80])
     %xticklabels({'30','50','65','80'})
@@ -98,10 +101,11 @@ while go
     % ylp = get(ylh, 'Position');
     % set(ylh, 'Rotation',0, 'Position',ylp, 'VerticalAlignment','middle', 'HorizontalAlignment','right');
     %tightfig;
+    set(gcf,'Position', [0 0 650 600])
     
     numPause = 0;
     while tempPause
-        pause(120)
+        pause(60)
         a = dir([directory '*.dat']);
         if b < numel(a)
             break;
