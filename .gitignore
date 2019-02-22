@@ -31,4 +31,6 @@
 *.out
 *.app
 
-frames/\.fuse_hidden0001d6f6000010eb
+#Added stuff
+*.gif
+.fuse_*

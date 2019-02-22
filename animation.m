@@ -8,10 +8,10 @@ set(groot, 'defaultAxesTickLabelInterpreter','latex');
 set(groot, 'defaultTextInterpreter','latex');
 set(groot, 'defaultLegendInterpreter','latex');
 
-directory = '4_256_frames_v3-c_1-J_4-numIters_2-20';
+directory = 'frames';
 lambda = 1;
 beta = 0.6;
-numIters = 2^20;
+numIters = 2^22;
 
 f = 'png'; %pdf or png!
 export = false; %Turns on the frame export! For GIF exporting, see separate script.
@@ -128,7 +128,7 @@ while go
             break;
         end
         numPause = numPause + 1;
-        if numPause > 2
+        if numPause > 20
             go = false;
             break;
         end

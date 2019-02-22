@@ -8,10 +8,10 @@ set(groot, 'defaultAxesTickLabelInterpreter','latex');
 set(groot, 'defaultTextInterpreter','latex');
 set(groot, 'defaultLegendInterpreter','latex');
 
-directory = '8_512_frames_v3-c_1-J_8-numIters_2-22_FBC';
+directory = 'frames';
 lambda = 1;
 beta = 0.6;
-numIters = 2^22;
+numIters = 2^24;
 
 export = true; %Turns on the export!
 height = 825;
@@ -39,7 +39,7 @@ while go
         lowLim = b;
     end
     
-    for n = lowLim:6:b
+    for n = lowLim:3:b
         frame = importdata([directory '/frame-' num2str(n) '.dat']);
         
         c0 = 1 - nnz(frame)/numel(frame);

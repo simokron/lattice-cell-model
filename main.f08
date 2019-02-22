@@ -6,16 +6,41 @@
 module constants
     implicit none
 
-    integer,parameter :: L = 256, lambda = 4, numIters = 2**20
+    integer,parameter :: L = 512, lambda = 8, numIters = 2**24
     real,parameter :: beta = 0.6, p0 = 0.4, p1 = (1 - p0)/2, phi = 0, cutoffConc = 0.1
-    logical,parameter :: cellCell = .false., constSeed = .false., FBC = .false.
+    logical,parameter :: constSeed = .false., FBC = .true.
     integer :: sigma(L,L), numSpins(L/lambda,L/lambda,1:3), n
-!    real,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !The result is a 3 x 3 row matrix, i.e. the first three values correspond to the elements in the first row, etc.
-    real,dimension(3, 3) :: J_str = transpose(reshape(0.05*[0, 1, 2, 1, 0, 1, 2, 1, 0], shape(J_str))) !4
+!    integer,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !The result is a 3 x 3 row matrix, i.e. the first three values correspond to the elements in the first row, etc.
+
+!    real,dimension(3, 3) :: J_str = transpose(reshape(1.0*[0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !1
+!    real,dimension(3, 3) :: J_str = transpose(reshape(0.3*[0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !2
+!    real,dimension(3, 3) :: J_str = transpose(reshape(0.08*[0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !4
+!    real,dimension(3, 3) :: J_str = transpose(reshape(0.01*[0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !8
+!    real,dimension(3, 3) :: J_str = transpose(reshape(0.0015*[0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !16
+!    real,dimension(3, 3) :: J_str = transpose(reshape(0.0003*[0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !32
+
+!    real,dimension(3, 3) :: J_str = transpose(reshape(1.3*[0, 1, 2, 1, 0, 1, 2, 1, 0], shape(J_str))) !1
+!    real,dimension(3, 3) :: J_str = transpose(reshape(0.2*[0, 1, 2, 1, 0, 1, 2, 1, 0], shape(J_str))) !2
+!    real,dimension(3, 3) :: J_str = transpose(reshape(0.05*[0, 1, 2, 1, 0, 1, 2, 1, 0], shape(J_str))) !4
 !    real,dimension(3, 3) :: J_str = transpose(reshape(0.01*[0, 1, 2, 1, 0, 1, 2, 1, 0], shape(J_str))) !8
-!    real,dimension(3, 3) :: J_str = transpose(reshape(0.5*[-3, 1, 3, 1, -2, 1, 3, 1, -3], shape(J_str))) !The result is a 3 x 3 row matrix, i.e. the first three values correspond to the elements in the first row, etc.
-!    real,dimension(3, 3) :: J_str = transpose(reshape(0.2*[-3, 1, 6, 1, -3, 1, 6, 1, -3], shape(J_str))) !CHECKERBOARD
-!    real,dimension(3, 3) :: J_str = transpose(reshape([-3, 1, 6, 1, -3, 1, 6, 1, -3], shape(J_str))) !THE MATRIX
+!    real,dimension(3, 3) :: J_str = transpose(reshape(0.003*[0, 1, 2, 1, 0, 1, 2, 1, 0], shape(J_str))) !16
+!    real,dimension(3, 3) :: J_str = transpose(reshape(0.001*[0, 1, 2, 1, 0, 1, 2, 1, 0], shape(J_str))) !32
+
+!    real,dimension(3, 3) :: J_str = transpose(reshape((14.1045*exp(-2.5148*lambda) + &
+!        0.2353*exp(-0.3906*lambda))*[0, 1, 2, 1, 0, 1, 2, 1, 0], shape(J_str))) !scaled
+
+!    real,dimension(3, 3) :: J_str = transpose(reshape((1.2936*lambda**(-2.7085)+0.0061-&
+!        0.003)*[0, 1, 2, 1, 0, 1, 2, 1, 0], shape(J_str))) !scaled
+
+!    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2.7)*0.1*[0, 6, 60, 6, 0, 6, 60, 6, 0], shape(J_str))) !TEST
+!    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2.65)*0.1*[0, 6, 60, 6, 0, 6, 60, 6, 0], shape(J_str))) !TEST
+    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*0.01* &
+        [0, 75, 115, 75, 0, 75, 115, 75, 0], shape(J_str))) !1
+!    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2.65)*0.1*[0, 10, 20, 10, 0, 10, 20, 10, 0], shape(J_str))) !TEST
+
+!    real,dimension(3, 3) :: J_str = transpose(reshape(0.005*[0, 10, 12, 10, 0, 10, 12, 10, 0], shape(J_str))) !SCALE C
+!    real,dimension(3, 3) :: J_str = transpose(reshape(0.1*[0, 10, 35, 10, 0, 10, 35, 10, 0], shape(J_str))) !1
+
 !    integer,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 6, 1, 0, 3, 6, 3, 0], shape(J_str))) !This will form a 'cap' of +1, cf. fig. 4 in Andrea's paper.
 !    integer,dimension(3, 3) :: J_str = transpose(reshape([0, 35, 15, 35, 0, 35, 15, 35, 0], shape(J_str))) !This is the 'strong repulsion' in Andrea's paper. It kinda works but I need much more energy..
 !    integer,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 6, 1, -2, 1, 6, 1, -2], shape(J_str))) !This is the 'strong repulsion' in Andrea's paper. It kinda works but I need much more energy..
@@ -213,7 +238,9 @@ contains
         integer :: k, b, h
         integer, dimension(1:3) :: numSpinsA, numSpinsB, numSpinsAprop, numSpinsBprop
         integer, dimension(1:3) :: numSpinsIntA, numSpinsIntB
-        real :: E_current, E_proposed, energyResult(1:2), c=1.00 !c=0.938 !c = 0.77056
+        real :: E_current, E_proposed, energyResult(1:2) 
+        real :: c = 1.0
+        real :: c2 = 1.0
 
         !Reset the value before each run.
         E_current = 0
@@ -247,8 +274,8 @@ contains
 
         !The energy is determined using the number of spins per cell, since their location doesn't matter in mean-field.
         do k = 1, 3
-            E_current = E_current + numSpinsIntA(k)*J_str(spin+2,k) + numSpinsIntB(k)*J_str(spin_p+2,k)
-            E_proposed = E_proposed + numSpinsIntA(k)*J_str(spin_p+2,k) + numSpinsIntB(k)*J_str(spin+2,k)
+            E_current = E_current + c2*numSpinsIntA(k)*J_str(spin+2,k) + c2*numSpinsIntB(k)*J_str(spin_p+2,k)
+            E_proposed = E_proposed + c2*numSpinsIntA(k)*J_str(spin_p+2,k) + c2*numSpinsIntB(k)*J_str(spin+2,k)
         enddo
 
         !And the nearest-neighbouring cell-cell interaction (note that the FBC changes the calculations with the neighbours slightly)
@@ -259,14 +286,16 @@ contains
             enddo
         enddo
         do h = 1, 5, 2
-            if(FBC .eqv. .true. .and. i_c == L/lambda .and. t == 0) then
-                if(h == 5) go to 20
-            elseif(FBC .eqv. .true. .and. i_c == L/lambda .and. t == 1) then
-                if(h == 3) go to 20
-            elseif(FBC .eqv. .true. .and. i_c == 1 .and. t == 0) then
-                if(h == 1) go to 20
-!            elseif(FBC .eqv. .true. .and. i_c == 1 .and. t == 1) then
-!                print *, 'farts'
+            if(FBC .eqv. .true.) then
+                if(i_c == L/lambda .and. t == 0) then
+                    if(h == 5) go to 20
+                elseif(i_c == L/lambda .and. t == 1) then
+                    if(h == 3) go to 20
+                elseif(i_c == 1 .and. t == 0) then
+                    if(h == 1) go to 20
+    !            elseif(FBC .eqv. .true. .and. i_c == 1 .and. t == 1) then
+    !                print *, 'farts'
+                endif
             endif
             do k = 1, 3
                 do b = 1, 3
@@ -277,13 +306,15 @@ contains
 20          continue
         enddo
         do h = 7, 11, 2
-            if(FBC .eqv. .true. .and. i_c == L/lambda .and. t == 0) then
-                if(h == 7) go to 30
-!            elseif(FBC .eqv. .true. .and. i_c == L/lambda .and. t == 1) then
-            elseif(FBC .eqv. .true. .and. i_c == 1 .and. t == 0) then
-                if(h == 11) go to 30
-            elseif(FBC .eqv. .true. .and. i_c == 1+1 .and. t == 1) then
-                if(h == 9) go to 30
+            if(FBC .eqv. .true.) then
+                if(i_c == L/lambda .and. t == 0) then
+                    if(h == 7) go to 30
+    !            elseif(FBC .eqv. .true. .and. i_c == L/lambda .and. t == 1) then
+                elseif(i_c == 1 .and. t == 0) then
+                    if(h == 11) go to 30
+                elseif(i_c == 1+1 .and. t == 1) then
+                    if(h == 9) go to 30
+                endif
             endif
             do k = 1, 3
                 do b = 1, 3
@@ -298,82 +329,6 @@ contains
 
         return
     end
-
-    function energyCellsBottom(cellSpins,t)result(energyResult)
-        integer, dimension (1:10) :: cellSpins
-        integer :: t
-
-        real, dimension (1:2) :: energyResult
-        integer :: h
-        real :: F_current, F_proposed
-
-        !Reset before every run.
-        F_current = 0
-        F_proposed = 0
-
-        !Now we loop for all of the spins in the nearest-neighbour cell-cell interaction and determine the current and proposed energies.
-        F_current = F_current + J_str(cellSpins(1) + 2, cellSpins(2) + 2)/2 &
-        + J_str(cellSpins(2) + 2, cellSpins(1) + 2)/2
-        F_proposed = F_proposed + J_str(cellSpins(9) + 2, cellSpins(10) + 2)/2 &
-        + J_str(cellSpins(10) + 2, cellSpins(9) + 2)/2
-
-        if(t == 0) then
-            h = 3
-                F_current = F_current + J_str(cellSpins(1) + 2, cellSpins(h) + 2)/2
-                F_proposed = F_proposed + J_str(cellSpins(9) + 2, cellSpins(h) + 2)/2
-            h = 5
-                F_current = F_current + J_str(cellSpins(1) + 2, cellSpins(h) + 2)/2
-                F_proposed = F_proposed + J_str(cellSpins(9) + 2, cellSpins(h) + 2)/2
-            do h = 6, 8
-                F_current = F_current + J_str(cellSpins(2) + 2, cellSpins(h) + 2)/2
-                F_proposed = F_proposed + J_str(cellSpins(10) + 2, cellSpins(h) + 2)/2
-            enddo
-        else
-            do h = 3, 4
-                F_current = F_current + J_str(cellSpins(1) + 2, cellSpins(h) + 2)/2
-                F_proposed = F_proposed + J_str(cellSpins(9) + 2, cellSpins(h) + 2)/2
-            enddo
-            do h = 7, 8
-                F_current = F_current + J_str(cellSpins(2) + 2, cellSpins(h) + 2)/2
-                F_proposed = F_proposed + J_str(cellSpins(10) + 2, cellSpins(h) + 2)/2
-            enddo
-        endif
-
-        energyResult = [F_current, F_proposed]
-
-        return
-    end
-
-    function energyCellsTop(cellSpins)result(energyResult)
-        integer, dimension (1:10) :: cellSpins
-
-        real, dimension (1:2) :: energyResult
-        integer :: h
-        real :: F_current, F_proposed
-
-        !Reset before every run.
-        F_current = 0
-        F_proposed = 0
-
-        !Now we loop for all of the spins in the nearest-neighbour cell-cell interaction and determine the current and proposed energies.
-        F_current = F_current + J_str(cellSpins(1) + 2, cellSpins(2) + 2)/2 &
-        + J_str(cellSpins(2) + 2, cellSpins(1) + 2)/2
-        F_proposed = F_proposed + J_str(cellSpins(9) + 2, cellSpins(10) + 2)/2 &
-        + J_str(cellSpins(10) + 2, cellSpins(9) + 2)/2
-
-        do h = 4, 5
-            F_current = F_current + J_str(cellSpins(1) + 2, cellSpins(h) + 2)/2
-            F_proposed = F_proposed + J_str(cellSpins(9) + 2, cellSpins(h) + 2)/2
-        enddo
-        do h = 6, 7
-            F_current = F_current + J_str(cellSpins(2) + 2, cellSpins(h) + 2)/2
-            F_proposed = F_proposed + J_str(cellSpins(10) + 2, cellSpins(h) + 2)/2
-        enddo
-
-        energyResult = [F_current, F_proposed]
-
-        return
-    end function energyCellsTop
 
 end module functions
 
@@ -516,7 +471,7 @@ contains
 30          continue
 
             if(i_c == 1 .and. t == 1) GO TO 10 !Avoid moves across top/bottom boundary.
-
+            
             !-Dynamics----------------------------------------------------------
             !Before we compute the energy, we must find the nearest-neighbouring cells.
             if(t == 0) cellNeighbours = [[y_up,j_c], [i_c,x_left], [y_down,j_c], &
