@@ -8,10 +8,11 @@ set(groot, 'defaultAxesTickLabelInterpreter','latex');
 set(groot, 'defaultTextInterpreter','latex');
 set(groot, 'defaultLegendInterpreter','latex');
 
-directory = 'frames';
+directory = 'se_lambda_32-L_1024_frames_v3-c_1-J_squareScaled-numIters_2-22-FBC_evapRand';
 lambda = 1;
-beta = 0.6;
-numIters = 2^24;
+numIters = 2^22;
+skipFrames = 2;
+pauseTime = 0.05;
 
 export = true; %Turns on the export!
 height = 825;
@@ -39,7 +40,7 @@ while go
         lowLim = b;
     end
     
-    for n = lowLim:3:b
+    for n = lowLim:skipFrames:b
         frame = importdata([directory '/frame-' num2str(n) '.dat']);
         
         c0 = 1 - nnz(frame)/numel(frame);
@@ -108,7 +109,7 @@ while go
                 im = frame2im(frame);
                 [imind,cm] = rgb2ind(im,256);
                 % Write to the GIF File
-                imwrite(imind,cm,filename,'gif','WriteMode','append','DelayTime',0.05);
+                imwrite(imind,cm,filename,'gif','WriteMode','append','DelayTime',pauseTime);
             end
             %pause(1)
             pause(0.0333); % 0.0167 for 60 FPS, 0.0333 for 30 FPS

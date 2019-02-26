@@ -8,10 +8,10 @@ set(groot, 'defaultAxesTickLabelInterpreter','latex');
 set(groot, 'defaultTextInterpreter','latex');
 set(groot, 'defaultLegendInterpreter','latex');
 
-directory = 'frames';
+directory = 'p0_06/s_lambda_8-L_512_frames_v3-c_1-J_squareScaled-numIters_2-24-FBC';
 lambda = 1;
 beta = 0.6;
-numIters = 2^22;
+numIters = 2^24;
 
 f = 'png'; %pdf or png!
 export = false; %Turns on the frame export! For GIF exporting, see separate script.
@@ -71,13 +71,15 @@ while go
             %set(findall(gca, 'type', 'text'), 'visible', 'on')
             if export == true
                 pause(1)
-                %set(findall(gca, 'type', 'text'), 'visible', 'off')
+                set(findall(gca, 'type', 'text'), 'visible', 'off')
+                set(gca,'Position', [0 0 1 1])
                 fig = gcf;
                 filename = sprintf([num2str(lambda) '_' num2str(size(frame,1)) '_beta_' strrep(num2str(beta),'.','') '_MCS_' num2str(round(MCS,0)) '_c0_0%d.' f],str2num(strrep(num2str(round(c0,2)),'.','')));
                 fig.PaperUnits = 'points';
                 fig.PaperPosition = [0 0 300 300];
                 print(filename,['-d' f]);
                 set(findall(gca, 'type', 'text'), 'visible', 'on')
+                set(gca,'Position', [0 0 1 width/height])
             end
             pause(1);
         else
@@ -94,18 +96,22 @@ while go
             ax.LineWidth = 1.0;
             ax.YAxis.Visible = 'off';
             ax.XAxis.Visible = 'off';
+            set(gcf,'Position', [0 0 width height])
+            set(gca,'Position', [0 0 1 width/height])
             if export == true %&& n == 900
                 %             k = 0.11
                 for k = 1:9
                     if round(c0,2) == k/10 && k/10 < current
                         current = k/10;
-                        %set(findall(gca, 'type', 'text'), 'visible', 'off')
+                        set(findall(gca, 'type', 'text'), 'visible', 'off')
+                        set(gca,'Position', [0 0 1 1])
                         fig = gcf;
                         filename = sprintf([num2str(lambda) '_' num2str(size(frame,1)) '_beta_' strrep(num2str(beta),'.','') '_MCS_' num2str(round(MCS,0)) '_c0_0%d.' f],str2num(strrep(num2str(round(c0,2)),'.','')));
                         fig.PaperUnits = 'points';
                         fig.PaperPosition = [0 0 300 300];
                         print(filename,['-d' f]);
                         set(findall(gca, 'type', 'text'), 'visible', 'on')
+                        set(gca,'Position', [0 0 1 width/height])
                     end
                 end
             end
@@ -116,7 +122,7 @@ while go
     end
     sequence = false;
     
-    if once == true
+    if once == true || export == true
         break;
     end
     
@@ -128,7 +134,7 @@ while go
             break;
         end
         numPause = numPause + 1;
-        if numPause > 20
+        if numPause > 60
             go = false;
             break;
         end

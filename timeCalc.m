@@ -9,6 +9,8 @@ set(groot, 'defaultTextInterpreter','latex');
 set(groot, 'defaultLegendInterpreter','latex');
 
 directory = ['frames' '/'];
+numIters = 2^22;
+cutoffConc = 0.1;
 
 go = true; tempPause = true;
 while go
@@ -22,8 +24,6 @@ while go
     
     cT = datetime(getfield(sortedA(b),'date'))-datetime(getfield(sortedA(1),'date'));
     currentTime = seconds(cT);
-    numIters = 2^23;
-    cutoffConc = 0.1;
     
     clc;
     fprintf(['Number of frames:              ' num2str(b)])
@@ -47,7 +47,7 @@ while go
     fprintf(['Number of frames:              ' num2str(b)])
     fprintf(['\nNumber of MCS:               ' num2str(MCS(end))])
     
-    f = fit(c0',MCS','exp2');
+    f = fit(c0',MCS','exp1');
     
     percCompActual = 100*(cutoffConc/c0(end));
     percComp = 100*MCS(end)/f(cutoffConc);

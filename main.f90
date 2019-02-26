@@ -8,7 +8,7 @@ module constants
 
     integer,parameter :: L = 512, lambda = 8, numIters = 2**24
     real,parameter :: beta = 0.6, p0 = 0.4, p1 = (1 - p0)/2, phi = 0, cutoffConc = 0.1
-    logical,parameter :: constSeed = .false., FBC = .true.
+    logical,parameter :: constSeed = .false., fastEvap = .true., FBC = .true.
     integer :: sigma(L,L), numSpins(L/lambda,L/lambda,1:3), n
 !    integer,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !The result is a 3 x 3 row matrix, i.e. the first three values correspond to the elements in the first row, etc.
 
@@ -32,10 +32,14 @@ module constants
 !    real,dimension(3, 3) :: J_str = transpose(reshape((1.2936*lambda**(-2.7085)+0.0061-&
 !        0.003)*[0, 1, 2, 1, 0, 1, 2, 1, 0], shape(J_str))) !scaled
 
+!    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*[0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !1
+!    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*0.01* &
+!        [0, 80, 160, 80, 0, 80, 160, 80, 0], shape(J_str))) !Based on manual tests.
+    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*0.01* &
+        [0, 75, 125, 75, 0, 75, 125, 75, 0], shape(J_str))) !1
+
 !    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2.7)*0.1*[0, 6, 60, 6, 0, 6, 60, 6, 0], shape(J_str))) !TEST
 !    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2.65)*0.1*[0, 6, 60, 6, 0, 6, 60, 6, 0], shape(J_str))) !TEST
-    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*0.01* &
-        [0, 75, 115, 75, 0, 75, 115, 75, 0], shape(J_str))) !1
 !    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2.65)*0.1*[0, 10, 20, 10, 0, 10, 20, 10, 0], shape(J_str))) !TEST
 
 !    real,dimension(3, 3) :: J_str = transpose(reshape(0.005*[0, 10, 12, 10, 0, 10, 12, 10, 0], shape(J_str))) !SCALE C
@@ -288,13 +292,20 @@ contains
         do h = 1, 5, 2
             if(FBC .eqv. .true.) then
                 if(i_c == L/lambda .and. t == 0) then
-                    if(h == 5) go to 20
+                    if(h == 5) then
+                        coordNum = CoordNum - 1
+                        go to 20
+                    endif
                 elseif(i_c == L/lambda .and. t == 1) then
-                    if(h == 3) go to 20
+                    if(h == 3) then
+                        coordNum = CoordNum - 1 
+                        go to 20
+                    endif
                 elseif(i_c == 1 .and. t == 0) then
-                    if(h == 1) go to 20
-    !            elseif(FBC .eqv. .true. .and. i_c == 1 .and. t == 1) then
-    !                print *, 'farts'
+                    if(h == 1) then
+                        coordNum = CoordNum - 1
+                        go to 20
+                    endif
                 endif
             endif
             do k = 1, 3
@@ -308,12 +319,20 @@ contains
         do h = 7, 11, 2
             if(FBC .eqv. .true.) then
                 if(i_c == L/lambda .and. t == 0) then
-                    if(h == 7) go to 30
-    !            elseif(FBC .eqv. .true. .and. i_c == L/lambda .and. t == 1) then
+                    if(h == 7) then
+                        coordNum = CoordNum - 1
+                        go to 30
+                    endif
                 elseif(i_c == 1 .and. t == 0) then
-                    if(h == 11) go to 30
+                    if(h == 11) then
+                        coordNum = CoordNum - 1
+                        go to 30
+                    endif
                 elseif(i_c == 1+1 .and. t == 1) then
-                    if(h == 9) go to 30
+                    if(h == 9) then
+                        coordNum = CoordNum - 1
+                        go to 30
+                    endif
                 endif
             endif
             do k = 1, 3
@@ -325,6 +344,7 @@ contains
 30          continue
         enddo
 
+        !Normalisation using coordNum
         energyResult = [E_current, E_proposed]
 
         return
@@ -339,7 +359,8 @@ module dynamics
 
 contains
     !This subroutine handles the evaporation of the top row by replacing the spin at (i,j) by +1 or -1 according to the appropriate concentration and returning the spin matrix.
-    subroutine evap(i_s, j_s, i_c, j_c)
+    subroutine evap(i_s, j_s, i_c, j_c, sigma, numSpins)
+        integer :: i_s, j_s, i_c, j_c, sigma(L,L), numSpins(L/lambda, L/lambda, 1:3)
         !Simply get a random number between 0 and 1 and compare it to the normalised concentrations, preserving the initial ratios of -1 and +1 species.
         call random_number(P)
         numSpins(i_c,j_c,0+2) = numSpins(i_c,j_c,0+2) - 1
@@ -351,6 +372,40 @@ contains
             numSpins(i_c,j_c,-1+2) = numSpins(i_c,j_c,-1+2) + 1
         endif
     end subroutine evap
+    
+    !Pseudo-random evaporation test.
+    subroutine evapRand(i_s, j_s, i_c, j_c, sigma, numSpins)
+        integer :: i_s, j_s, i_c, j_c, sigma(L,L), numSpins(L/lambda, L/lambda, 1:3), spinT
+        integer :: i_c_evap, j_c_evap, i_s_evap, j_s_evap, spinTemp_evap(1:2), spin_evap, k
+        real :: u, conc
+
+        k = 0
+        conc = real(count(sigma == 0))/real(L**2) !Conc after evap event.
+        
+60      call random_number(u); i_c_evap = 1 + floor((L/lambda)*u) !This yields an integer between 1 and L/lambda
+        call random_number(u); j_c_evap = 1 + floor((L/lambda)*u)
+
+        !Now we randomly select a spin inside of the first cell of the bond.
+        call random_number(u); s_evap = 1 + floor((lambda**2)*u) !This yields an integer between 1 and lambda^2 (i.e. the total number of spins in a cell).
+
+        !And determine the "xy-coordinates" of the spin.
+        spinTemp_evap = spinCord(s_evap, i_c_evap, j_c_evap)
+        i_s_evap = spinTemp_evap(1); j_s_evap = spinTemp_evap(2)
+
+!        print *, 'i_s_evap = ', i_s_evap
+!        print *, 'j_s_evap = ', j_s_evap
+
+        !Finally we have the actual spin at i_s and j_s, which we store in spin.
+        spin_evap = sigma(i_s_evap, j_s_evap)
+        k = k + 1
+
+        if(spin_evap /= 0 .and. k < (1/conc) .and. k < 1000) goto 60
+
+        spinT = sigma(i_s, j_s)
+
+        call updateSigma(spinT, spin_evap, sigma, i_s, j_s, i_s_evap, j_s_evap)
+        call recalcSpins(spinT, spin_evap, numSpins, i_c, j_c, i_c_evap, j_c_evap)
+    end subroutine evapRand
 
     !This subroutine updates sigma, should the proposed move be approved.
     subroutine updateSigma(spin, spin_p, sigma, i_s, j_s, i_p_s, j_p_s)
@@ -453,7 +508,8 @@ contains
 
             !-Evaporation of top row--------------------------------------------
             if(i_c == 1 .and. spin == 0) then
-                call evap(i_s, j_s, i_c, j_c)
+                call evap(i_s, j_s, i_c, j_c, sigma, numSpins)
+                if(fastEvap .eqv. .true.) call evapRand(i_s, j_s, i_c, j_c, sigma, numSpins)
                 GO TO 10
             endif
 
@@ -524,12 +580,6 @@ program main
     logical :: file_exists = .true.
     real :: start, finish, numHour, numMin, numSec, conc, MCS
 
-    call setupRNG()
-    call genSpins(L, sigma, p0, p1) !Generates a pseudo-random L x L "tenary spin matrix".
-    numSpins = initialNum(L, lambda, sigma) !Determines the initial number of spins.
-
-    conc = real(count(sigma == 0))/real(L**2)
-
     !This clears the frames/ directory!
     n = 0
     do while (file_exists .eqv. .true.)
@@ -541,14 +591,20 @@ program main
         if(stat == 0) close(10, status='delete')
     enddo
 
-    !Debugging stuff - basically gives one the ability to continue an aborted simulation from a specified state (REMEMBER TO COMMENT OUT THE STUFF ABOVE - IT *WILL* REMOVE ALL OF THE FILES OTHERWISE!).
-!    write(file_id, '(i0)') 170
+!    !Debugging stuff - basically gives one the ability to continue an aborted simulation from a specified state (REMEMBER TO COMMENT OUT THE STUFF ABOVE - IT *WILL* REMOVE ALL OF THE FILES OTHERWISE! AND ALSO THE GENSPINS CALL BELOW).
+!    write(file_id, '(i0)') 470
 !    file_name = 'frames/frame-' // trim(adjustl(file_id)) // '.dat'
 !    open(10, file = trim(file_name), form = 'formatted')
 !    do i = 1,L
 !        read(10,*) (sigma(i,j), j = 1,L)
 !    enddo
 !    close(10)
+
+    call setupRNG()
+    call genSpins(L, sigma, p0, p1) !Generates a pseudo-random L x L "tenary spin matrix".
+
+    numSpins = initialNum(L, lambda, sigma) !Determines the initial number of spins.
+    conc = real(count(sigma == 0))/real(L**2)
 
     call cpu_time(start) !Keeps track of the time.
     !This is the main loop; it writes the .dat files and calls the metropolis() subroutine to alter the spin matrix and it also informs the user about the number of frames, time remaining etc.
