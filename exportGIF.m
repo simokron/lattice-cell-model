@@ -8,19 +8,18 @@ set(groot, 'defaultAxesTickLabelInterpreter','latex');
 set(groot, 'defaultTextInterpreter','latex');
 set(groot, 'defaultLegendInterpreter','latex');
 
-directory = 'p0_06/s_lambda_8-L_512_frames_v3-c_1-J_squareScaled-numIters_2-24-FBC';
+directory = 'se_lambda_32-L_1024_frames_v3-c_1-J_squareScaled-numIters_2-22-FBC_evapRand';
 lambda = 1;
-beta = 0.6;
-numIters = 2^24;
+numIters = 2^22;
+skipFrames = 2;
+pauseTime = 0.05;
 
-f = 'png'; %pdf or png!
-export = false; %Turns on the frame export! For GIF exporting, see separate script.
-current = 1.0; %relates to exporting - largest concentration to save (usually best keps at 1.0)
+export = true; %Turns on the export!
 height = 825;
 width = 800;
 
 sequence = true; %true for whole sequence
-once = false; %false for currently running simulations
+once = true; %false for currently running simulations
 
 a = dir([directory '/*.dat']);
 b = numel(a);
@@ -34,14 +33,14 @@ while go
     
     clc;
     fprintf(['numFrames = ' num2str(b) '\n'])
-        
+    
     if sequence == true
         lowLim = 1;
     else
         lowLim = b;
     end
     
-    for n = lowLim:1:b
+    for n = lowLim:skipFrames:b
         frame = importdata([directory '/frame-' num2str(n) '.dat']);
         
         c0 = 1 - nnz(frame)/numel(frame);
@@ -65,21 +64,27 @@ while go
             ax.LineWidth = 1.0;
             ax.YAxis.Visible = 'off';
             ax.XAxis.Visible = 'off';
-            set(gcf,'Position', [0 0 width height])
+            set(gcf,'Position', [1920-width/2 720-height/2 width height])
             set(gca,'Position', [0 0 1 width/height])
             %set(gca,'visible','off');
             %set(findall(gca, 'type', 'text'), 'visible', 'on')
             if export == true
                 pause(1)
-                set(findall(gca, 'type', 'text'), 'visible', 'off')
-                set(gca,'Position', [0 0 1 1])
-                fig = gcf;
-                filename = sprintf([num2str(lambda) '_' num2str(size(frame,1)) '_beta_' strrep(num2str(beta),'.','') '_MCS_' num2str(round(MCS,0)) '_c0_0%d.' f],str2num(strrep(num2str(round(c0,2)),'.','')));
-                fig.PaperUnits = 'points';
-                fig.PaperPosition = [0 0 300 300];
-                print(filename,['-d' f]);
-                set(findall(gca, 'type', 'text'), 'visible', 'on')
-                set(gca,'Position', [0 0 1 width/height])
+                h = gcf;
+                filename = [directory '.gif'];
+                % Capture the plot as an image
+                frame = getframe(h);
+                im = frame2im(frame);
+                [imind,cm] = rgb2ind(im,256);
+                % Write to the GIF File
+                imwrite(imind,cm,filename,'gif', 'Loopcount',inf);
+                imwrite(imind,cm,filename,'gif','WriteMode','append','DelayTime',2);
+                %               fig = gcf;
+                %               filename = sprintf([num2str(lambda) '_' num2str(size(frame,1)) '_beta_' strrep(num2str(beta),'.','') '_MCS_' num2str(round(MCS,0)) '_c0_0%d.' f],str2num(strrep(num2str(round(c0,2)),'.','')));
+                %               fig.PaperUnits = 'points';
+                %               fig.PaperPosition = [0 0 300 300];
+                %               print(filename,['-d' f]);
+                %               set(findall(gca, 'type', 'text'), 'visible', 'on')
             end
             pause(1);
         else
@@ -96,24 +101,15 @@ while go
             ax.LineWidth = 1.0;
             ax.YAxis.Visible = 'off';
             ax.XAxis.Visible = 'off';
-            set(gcf,'Position', [0 0 width height])
-            set(gca,'Position', [0 0 1 width/height])
             if export == true %&& n == 900
-                %             k = 0.11
-                for k = 1:9
-                    if round(c0,2) == k/10 && k/10 < current
-                        current = k/10;
-                        set(findall(gca, 'type', 'text'), 'visible', 'off')
-                        set(gca,'Position', [0 0 1 1])
-                        fig = gcf;
-                        filename = sprintf([num2str(lambda) '_' num2str(size(frame,1)) '_beta_' strrep(num2str(beta),'.','') '_MCS_' num2str(round(MCS,0)) '_c0_0%d.' f],str2num(strrep(num2str(round(c0,2)),'.','')));
-                        fig.PaperUnits = 'points';
-                        fig.PaperPosition = [0 0 300 300];
-                        print(filename,['-d' f]);
-                        set(findall(gca, 'type', 'text'), 'visible', 'on')
-                        set(gca,'Position', [0 0 1 width/height])
-                    end
-                end
+                %set(findall(gca, 'type', 'text'), 'visible', 'off')
+                h = gcf;
+                % Capture the plot as an image
+                frame = getframe(h);
+                im = frame2im(frame);
+                [imind,cm] = rgb2ind(im,256);
+                % Write to the GIF File
+                imwrite(imind,cm,filename,'gif','WriteMode','append','DelayTime',pauseTime);
             end
             %pause(1)
             pause(0.0333); % 0.0167 for 60 FPS, 0.0333 for 30 FPS
@@ -121,8 +117,10 @@ while go
         end
     end
     sequence = false;
+
+    imwrite(imind,cm,filename,'gif','WriteMode','append','DelayTime',5);
     
-    if once == true || export == true
+    if once == true
         break;
     end
     
@@ -134,7 +132,7 @@ while go
             break;
         end
         numPause = numPause + 1;
-        if numPause > 60
+        if numPause > 2
             go = false;
             break;
         end
