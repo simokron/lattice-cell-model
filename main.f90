@@ -6,9 +6,9 @@
 module constants
     implicit none
 
-    integer,parameter :: L = 512, lambda = 8, numIters = 2**24
-    real,parameter :: beta = 0.6, p0 = 0.4, p1 = (1 - p0)/2, phi = 0, cutoffConc = 0.1
-    logical,parameter :: constSeed = .false., fastEvap = .true., FBC = .true.
+    integer,parameter :: L = 128, lambda = 4, numIters = 2**22
+    real,parameter :: beta = 0.6, p0 = 0.4, p1 = (1 - p0)/2, phi = 0, cutoffConc = 0.01
+    logical,parameter :: constSeed = .false., fastEvap = .false., FBC = .false.
     integer :: sigma(L,L), numSpins(L/lambda,L/lambda,1:3), n
 !    integer,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !The result is a 3 x 3 row matrix, i.e. the first three values correspond to the elements in the first row, etc.
 
@@ -34,9 +34,9 @@ module constants
 
 !    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*[0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !1
 !    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*0.01* &
-!        [0, 80, 160, 80, 0, 80, 160, 80, 0], shape(J_str))) !Based on manual tests.
+!        [0, 80, 160, 80, 0, 80, 160, 80, 0], shape(J_str))) !Based on manual tests. Here be dragons.
     real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*0.01* &
-        [0, 75, 125, 75, 0, 75, 125, 75, 0], shape(J_str))) !1
+        [0, 75, 125, 75, 0, 75, 125, 75, 0], shape(J_str))) !These are the best values, IMO.
 
 !    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2.7)*0.1*[0, 6, 60, 6, 0, 6, 60, 6, 0], shape(J_str))) !TEST
 !    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2.65)*0.1*[0, 6, 60, 6, 0, 6, 60, 6, 0], shape(J_str))) !TEST
