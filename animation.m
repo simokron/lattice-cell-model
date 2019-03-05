@@ -8,8 +8,15 @@ set(groot, 'defaultAxesTickLabelInterpreter','latex');
 set(groot, 'defaultTextInterpreter','latex');
 set(groot, 'defaultLegendInterpreter','latex');
 
-directory = 'evapRand/se_lambda_16-L_1024_frames_v3-c_1-J_squareScaled-numIters_2-24-FBC_evapRand';
-lambda = 16;
+%prefix = 'squareScaling/';
+prefix = 'PBCvsFBC/';
+%prefix = '';
+if isempty(prefix) == true
+    directory = [prefix 'frames'];
+else
+    directory = [prefix 's_lambda_4-L_256_frames_v3-c_1-J_squareScaled-numIters_2-24-FBC'];
+end
+lambda = 4;
 beta = 0.6;
 numIters = 2^24;
 
@@ -17,26 +24,32 @@ cellVisualisation = true;
 linInt = true; m = 1.5;
 gridOn = false;
 
-f = 'png'; %pdf or png!
-export = false; %Turns on the frame export! For GIF exporting, use exporGIF below. DO NOT USE BOTH!
-exportGIF = true;
+f = 'pdf'; %pdf or png!
+export = true; %Turns on the frame export! For GIF exporting, use exporGIF below. DO NOT USE BOTH!
+exportGIF = false;
 
 if exportGIF == true
-    skipFrames = 2;
+    skipFrames = 1;
 else
     skipFrames = 1;
 end
 pauseTime = 0.1;
 
 current = 1.0; %relates to exporting - largest concentration to save (usually best keps at 1.0)
-height = 825;
+height = 838;
 width = 800;
 
 sequence = false; %true for whole sequence
-once = false; %false for currently running simulations
+once = true; %false for currently running simulations
 
 a = dir([directory '/*.dat']);
 b = numel(a);
+
+if b == 0
+   fprintf('Empty directory...\n')
+   fprintf('Aborting!\n')
+   return;
+end
 
 fprintf(['numFrames = ' num2str(b) '\n'])
 
@@ -51,8 +64,11 @@ while go
     
     clc;
     fprintf(['numFrames = ' num2str(b) '\n'])
+    if exportGIF == true
+       fprintf('Exporting frames as GIF...\n') 
+    end
     
-    if sequence == true || exportGIF == true
+    if sequence == true || export == true || exportGIF == true
         lowLim = 1;
     else
         lowLim = b;
@@ -84,15 +100,15 @@ while go
                     cUp_cell((i+lambda-1)/lambda,(j+lambda-1)/lambda) = numUp/lambda^2;
                 end
             end
-            cDiff = cUp_cell-cDown_cell;
+            cDiff = cDown_cell - cUp_cell; %White <---> more down!
             
-            map = gray(256);
+            map = gray(4096);
             minv = min(cZero_cell(:));
             maxv = max(cZero_cell(:));
             ncol = size(map,1);
             s = round(1+(ncol-1)*(cZero_cell-minv)/(maxv-minv));
             
-            mapRed = [0:4096]'./256;
+            mapRed = [0:4096]'./4096;
             mapGreen = [zeros(size(0:4096))]';
             mapBlue = [zeros(size(0:4096))]';
             
@@ -162,11 +178,12 @@ while go
                     HSV(HSV > 1) = 1;  % Limit values
                     imTest = hsv2rgb(HSV);
                     
-                    imagesc(imTest)
+                    imagesc(imTest);
                     sF = size(imTest,1)/size(im,1);
                     
                 else
                     imagesc(im);
+                    %imagesc(rgb_image); %DEBUGGING
                     sF = 1;
                     
                 end
@@ -175,6 +192,7 @@ while go
                 imagesc(frame);
             end
             
+            set(gca,'FontSize',14)
             title(['Concentration of zeros = ' num2str(round(c0,2)) '; MCS = ' num2str(MCS)])
             if gridOn == true
                 if cellVisualisation == true
@@ -267,16 +285,19 @@ while go
                     imTest = hsv2rgb(HSV);
                     
                     imagesc(imTest)
+                    sF = size(imTest,1)/size(im,1);
                     
                 else
                     imagesc(im);
-                    
+                    %imagesc(rgb_image); %DEBUGGING
+                    sF = 1;
                 end
             else
-                colormap(mymap)
+                colormap(mymap);
                 imagesc(frame);
             end
             
+            set(gca,'FontSize',14)
             title(['Concentration of zeros = ' num2str(round(c0,2)) '; MCS = ' num2str(MCS)])
             if gridOn == true
                 if cellVisualisation == true

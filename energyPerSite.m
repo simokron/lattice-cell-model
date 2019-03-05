@@ -23,11 +23,12 @@ yF2 = [1.21179819, 1.27475214, 1.43546546, 1.71248770, 1.98802304]; %FBC; L = 51
 % Plotting
 %figure
 %h1 = axes;
-%set(gca,'FontSize',12)
+set(gca,'FontSize',14)
+grid on
 hold on
-plot(1024./x,yF,'.k')
-%plot(1024./x,yP,'.-m')
-plot(512./x,yF2,'.r')
+plot(1024./x,yP,'.k', 'MarkerSize',20)
+plot(1024./x,yF,'.m', 'MarkerSize',20)
+%plot(512./x,yF2,'.m', 'MarkerSize',20)
 %plot(exp([-1:0.01:max(x)]),exp(f([-1:0.01:max(x)])),'-m')
 %plot([-1:0.01:max(x)],f([-1:0.01:max(x)]),'-m')
 %plot(MCS,y,'.k')
@@ -42,11 +43,11 @@ hold off
 %set(gca, 'XScale', 'log')
 
 % Cosmetic plot stuff.
-xlabel('$L/\lambda$')
-ylabel('Interaction energy per site $\langle \mathcal{H} \rangle$')
+xlabel('$L/\lambda$ [$\log_2$]')
+ylabel('$\langle \mathcal{H}_{\textnormal{int}} \rangle$')
 %title('Line profiles')
-%legend('FBC','PBC','Location','northeast')
-legend('$L = 1024$','$L = 512$','Location','northeast')
+legend('PBC','FBC','Location','northeast')
+%legend('$L = 1024$','$L = 512$','Location','northeast')
 box on
 
 %xlim([min(x) - 1*min(x), max(x) + 0.1*max(x)]);
@@ -54,9 +55,10 @@ box on
 %set(gca, 'YScale', 'log')
 %set(gca, 'XScale', 'log')
 %
-xticks(sort(512./x))
-xticks(sort(1024./x))
-%xticklabels({'30','50','65','80'})
+%xticks(unique([sort(512./x) sort(1024./x)]))
+%xticklabels(split(num2str(log2(unique([sort(512./x) sort(1024./x)])))))
+xticks(unique([sort(1024./x)]))
+xticklabels(split(num2str(log2(unique([sort(1024./x)])))))
 yticks([0:0.2:100])
 %yticklabels({'0.4','0.6','0.8','1.0','1.2','1.4','1.6','1.8'})
 
@@ -65,4 +67,4 @@ yticks([0:0.2:100])
 % gyl = get(ylh);
 % ylp = get(ylh, 'Position');
 % set(ylh, 'Rotation',0, 'Position',ylp, 'VerticalAlignment','middle', 'HorizontalAlignment','right');
-%tightfig;
+tightfig;

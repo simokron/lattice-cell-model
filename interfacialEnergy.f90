@@ -13,11 +13,12 @@ module constants
     integer, dimension (:,:), allocatable :: sigma
     real, dimension (:,:), allocatable :: energyCells
     integer, dimension (:,:,:), allocatable :: numSpins
-!    character(256) :: dir = 'se_lambda_4-L_1024_frames_v3-c_1-J_squareScaled-numIters_2-27-FBC_evapRand'
-!    character(256) :: dir = 'se_lambda_8-L_1024_frames_v3-c_1-J_squareScaled-numIters_2-26-FBC_evapRand'
-!    character(256) :: dir = 'se_lambda_16-L_1024_frames_v3-c_1-J_squareScaled-numIters_2-24-FBC_evapRand'
-!    character(256) :: dir = 'se_lambda_32-L_1024_frames_v3-c_1-J_squareScaled-numIters_2-22-FBC_evapRand'
-    character(256) :: dir = 'se_lambda_64-L_1024_frames_v3-c_1-J_squareScaled-numIters_2-20-FBC_evapRand'
+!    character(256) :: dir = 'evapRand/se_lambda_4-L_1024_frames_v3-c_1-J_squareScaled-numIters_2-27-FBC_evapRand'
+!    character(256) :: dir = 'evapRand/se_lambda_8-L_1024_frames_v3-c_1-J_squareScaled-numIters_2-26-FBC_evapRand'
+!    character(256) :: dir = 'evapRand/se_lambda_16-L_1024_frames_v3-c_1-J_squareScaled-numIters_2-24-FBC_evapRand'
+!    character(256) :: dir = 'evapRand/se_lambda_32-L_1024_frames_v3-c_1-J_squareScaled-numIters_2-22-FBC_evapRand'
+!    character(256) :: dir = 'evapRand/se_lambda_64-L_1024_frames_v3-c_1-J_squareScaled-numIters_2-20-FBC_evapRand'
+    character(256) :: dir = 'evapRand/se_lambda_128-L_1024_frames_v3-c_1-J_squareScaled-numIters_2-18-FBC_evapRand'
 
 !    character(256) :: dir = 's_lambda_4-L_512_frames_v3-c_1-J_squareScaled-numIters_2-24-FBC'
 !    character(256) :: dir = 's_lambda_8-L_512_frames_v3-c_1-J_squareScaled-numIters_2-24-FBC'

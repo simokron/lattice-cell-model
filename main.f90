@@ -6,10 +6,14 @@
 module constants
     implicit none
 
-    integer,parameter :: L = 128, lambda = 4, numIters = 2**22
-    real,parameter :: beta = 0.6, p0 = 0.4, p1 = (1 - p0)/2, phi = 0, cutoffConc = 0.01
-    logical,parameter :: constSeed = .false., fastEvap = .false., FBC = .false.
-    integer :: sigma(L,L), numSpins(L/lambda,L/lambda,1:3), n
+    !L and lambda are the lattice and cell dimensions, respectively; numIters is the number of Monte Carlo steps per frame.
+    !beta is the reciprocal temperature; p0 is the concentration of zeroes at t = 0; p1 is the concentration of +1 (and -1 at the moment); phi is to volatility; cutoffConc is the final residual solvent concentration - set to negative number for infinite run-time.
+    !To boolean constSeed uses a constant seed for the RNG (for debugging); fastEvap uses the evapRand subroutine (which is unphysical garbage); FBC enables the free boundary conditions.
+    !sigma is the spin matrix; numSpins is a tensor of rank 3 which stores the number of spins of each spices per cell.
+    integer,parameter :: L = 256, lambda = 4, numIters = 2**20
+    real,parameter :: beta = 0.6, p0 = 0.6, p1 = (1 - p0)/2, phi = 0, cutoffConc = 0.1
+    logical,parameter :: constSeed = .false., fastEvap = .false., FBC = .true.
+    integer :: sigma(L,L), numSpins(L/lambda,L/lambda,1:3)
 !    integer,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !The result is a 3 x 3 row matrix, i.e. the first three values correspond to the elements in the first row, etc.
 
 !    real,dimension(3, 3) :: J_str = transpose(reshape(1.0*[0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !1
@@ -37,6 +41,9 @@ module constants
 !        [0, 80, 160, 80, 0, 80, 160, 80, 0], shape(J_str))) !Based on manual tests. Here be dragons.
     real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*0.01* &
         [0, 75, 125, 75, 0, 75, 125, 75, 0], shape(J_str))) !These are the best values, IMO.
+ 
+!    real,dimension(3, 3) :: J_str = transpose(reshape(0.01* &
+!        [0, 75, 125, 75, 0, 75, 125, 75, 0], shape(J_str))) !UNSCALED
 
 !    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2.7)*0.1*[0, 6, 60, 6, 0, 6, 60, 6, 0], shape(J_str))) !TEST
 !    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2.65)*0.1*[0, 6, 60, 6, 0, 6, 60, 6, 0], shape(J_str))) !TEST
@@ -198,7 +205,7 @@ contains
         return
     end
 
-    !This function takes the value of L and lambda as well as the initial spin configuration and returns the number of spins of a given species in a 3D array, where the first the indices relate to the row-column of the cell and the third to the spin species (-1,0,1)+2.
+    !This function takes the value of L and lambda as well as the initial spin configuration and returns the number of spins of a given species in a rank 3 tensor, where the first the indices relate to the row-column of the cell and the third to the spin species (-1,0,1)+2.
     function initialNum(L, lambda, sigma)result(numResult)
         integer :: L, lambda, sigma(L,L)
         integer, dimension(1:3) :: tempSpins
@@ -206,6 +213,7 @@ contains
 
         integer :: i, j, first(1:2), x1, x2
 
+        !The outer loop runs over the total number of cells.
         do i = 1, L/lambda
             do j = 1, L/lambda
                 first = findFirst(i, j)
@@ -213,6 +221,7 @@ contains
                 !Reset for each run.
                 tempSpins = [0,0,0]
 
+                !Here we simply loop over each spin in the cell and counts the number of spins of species \alpha \in {-1, 0, 1}.
                 do x1 = first(1), first(1) + lambda - 1
                     do x2 = first(2), first(2) + lambda - 1
                         spin_loop = sigma(x1, x2)
@@ -226,6 +235,7 @@ contains
                     enddo
                 enddo
 
+                !Transform the result to an array.
                 do k = 1, 3
                     numResult(i,j,k) = tempSpins(k)
                 enddo
@@ -243,14 +253,14 @@ contains
         integer, dimension(1:3) :: numSpinsA, numSpinsB, numSpinsAprop, numSpinsBprop
         integer, dimension(1:3) :: numSpinsIntA, numSpinsIntB
         real :: E_current, E_proposed, energyResult(1:2) 
-        real :: c = 1.0
+        real :: c = 1.0 !Allows for tuning of the interaction between cells.
         real :: c2 = 1.0
 
-        !Reset the value before each run.
+        !Reset the values before each run.
         E_current = 0
         E_proposed = 0
 
-        !The number of spins in cell A and B can be trivially determined from, together with the number of spins of species k the currently considered spin interacts with
+        !The number of spins in cell A and B can be trivially determined from,together with the number of spins of species k the currently considered spin interacts with (just the number of spins in that cell of the species, minus one to avoid self-interaction).
         do k = 1,3
             numSpinsA(k) = numSpins(i_c,j_c,k)
             numSpinsB(k) = numSpins(i_p_c,j_p_c,k)
@@ -282,7 +292,8 @@ contains
             E_proposed = E_proposed + c2*numSpinsIntA(k)*J_str(spin_p+2,k) + c2*numSpinsIntB(k)*J_str(spin+2,k)
         enddo
 
-        !And the nearest-neighbouring cell-cell interaction (note that the FBC changes the calculations with the neighbours slightly)
+        !And the nearest-neighbouring cell-cell interaction (note that the FBC changes the calculations with the neighbours slightly).
+        !This section is hard to follow without the aid of the figure showing the nearest-neighbour cluster - see the thesis.
         do k = 1, 3
             do b = 1, 3
                 E_current = E_current + c*numSpinsA(k)*numSpinsB(b)*J_str(k,b)
@@ -293,17 +304,14 @@ contains
             if(FBC .eqv. .true.) then
                 if(i_c == L/lambda .and. t == 0) then
                     if(h == 5) then
-                        coordNum = CoordNum - 1
                         go to 20
                     endif
                 elseif(i_c == L/lambda .and. t == 1) then
                     if(h == 3) then
-                        coordNum = CoordNum - 1 
                         go to 20
                     endif
                 elseif(i_c == 1 .and. t == 0) then
                     if(h == 1) then
-                        coordNum = CoordNum - 1
                         go to 20
                     endif
                 endif
@@ -320,17 +328,14 @@ contains
             if(FBC .eqv. .true.) then
                 if(i_c == L/lambda .and. t == 0) then
                     if(h == 7) then
-                        coordNum = CoordNum - 1
                         go to 30
                     endif
                 elseif(i_c == 1 .and. t == 0) then
                     if(h == 11) then
-                        coordNum = CoordNum - 1
                         go to 30
                     endif
                 elseif(i_c == 1+1 .and. t == 1) then
                     if(h == 9) then
-                        coordNum = CoordNum - 1
                         go to 30
                     endif
                 endif
@@ -344,7 +349,6 @@ contains
 30          continue
         enddo
 
-        !Normalisation using coordNum
         energyResult = [E_current, E_proposed]
 
         return
@@ -373,7 +377,7 @@ contains
         endif
     end subroutine evap
     
-    !Pseudo-random evaporation test.
+    !Pseudo-random evaporation test (probably shite).
     subroutine evapRand(i_s, j_s, i_c, j_c, sigma, numSpins)
         integer :: i_s, j_s, i_c, j_c, sigma(L,L), numSpins(L/lambda, L/lambda, 1:3), spinT
         integer :: i_c_evap, j_c_evap, i_s_evap, j_s_evap, spinTemp_evap(1:2), spin_evap, k
@@ -407,20 +411,23 @@ contains
         call recalcSpins(spinT, spin_evap, numSpins, i_c, j_c, i_c_evap, j_c_evap)
     end subroutine evapRand
 
-    !This subroutine updates sigma, should the proposed move be approved.
+    !This subroutine updates sigma, should the proposed move be approved (trivial, but convenient to have as a subroutine).
     subroutine updateSigma(spin, spin_p, sigma, i_s, j_s, i_p_s, j_p_s)
         integer :: spin, spin_p, sigma(L,L), i_s, j_s, i_p_s, j_p_s
 
+        !Simply switch the spins at i_s, j_s and i_p_s, j_p_s via the spin and spin_p variables.
         sigma(i_s, j_s) = spin_p
         sigma(i_p_s, j_p_s) = spin
 
         return
     end subroutine updateSigma
 
+    !This subroutine 'recalculates' the numSpins tensor (really it just updates it - there is no need for a bunch of calculations).
     subroutine recalcSpins(spin, spin_p, numSpins, i_c, j_c, i_p_c, j_p_c)
         integer :: spin, spin_p, numSpins(L/lambda,L/lambda,1:3), i_c, j_c, i_p_c, j_p_c
         integer :: k
 
+        !Simply loop over the number of spin species and adjust accordingly.
         do k = 1,3
             if(k == spin + 2) then
                 numSpins(i_c,j_c,k) = numSpins(i_c,j_c,k) - 1
@@ -446,35 +453,35 @@ contains
         !index "c" := related to cells, so i_c, j_c will hold the "xy-coordinates" of the currently considered cell.
         !index "s" := related to spins, so i_s, j_s will hold the "xy-coordinates" of the currently considered spin (note however that these are really two different sets of coordinates as there exist fewer cells than spins except in the edge-case of lambda = 1). For the spins, these are literally the coordinates of the spins, and thus sigma(i_s,j_s) will return the value of the spin currently being considered. This of course makes no sense for spin(i_c,j_c).
         !index "p" indicates a ''paired'' quantity, i.e. i_p_c, j_p_c will be the "xy-coordinates" of the bond in the *paired* cell in the bond.
-        !The odd ones out then are y_down, y_up, etc. which relates to the nearest-neighbouring cells (and thus also the PBC). In the future I will make a function/subroutine for determining the nearest-neighbours of the cells, as well as the PBC.
+        !The odd ones out then are y_down, y_up, etc. which relates to the nearest-neighbouring cells.
         !t stands for ''type'' and it is used to keep track of if the bond is a vertical or horisontal one (used for the volatility which is currently disabled).
         !b is the currently considered bond. It is really an integer but because of the way I generate it, it needs to be a real for now.
         !u is used in the RNG.
-        !E_current1 etc. relate to the current and proposed energies of the system (due to a spin move! I am yet to implement cell-cell interaction).
         !w and P are used to check for acceptance criteria (Boltzmaan factor).
         integer :: i_c, j_c, k, spin, y_down, y_up, x_left, x_right, t
         integer :: i_s, j_s, i_p_s, j_p_s, y_p_down, y_p_up, x_p_left, x_p_right
         integer :: i_p_c, j_p_c, spin_p
-        integer, dimension(1:4) :: PBCTemp
-        integer, dimension(1:2) :: spinTemp
-        integer, dimension(1:3) :: cell1
-        integer, dimension(1:12) :: cellNeighbours
-        real, dimension(1:2) :: energy
+        integer, dimension(1:4) :: PBCTemp !Temporary array for storing the coordinates from the PBC function.
+        integer, dimension(1:2) :: spinTemp !Temporary array for storing the coordinates of the spin.
+        integer, dimension(1:3) :: cell1 !Temporary array for storing the coordinates and type of bond of the cells.
+        integer, dimension(1:12) :: cellNeighbours !Array to store the coordinates of the 6 neighbours (see image in thesis).
+        real, dimension(1:2) :: energy !Array for storing the energy before and after proposed spin switch.
         real :: b, s, u, dE, w, P
 
         !This is the actual Metropolis algorithm. Again, somewhat messy.
         do k = 1,numIters
+            !-Cell and spin selection-------------------------------------------
             !First we randomly select a bond.
     10      call random_number(u); b = 1 + floor(2*((L/lambda)**2)*u) !This yields an integer between 1 and 2*(L/lambda)^2 (i.e. the total number of bonds between cells). Whence b will be the currently considered bond number.
 
-            !Then we determine the "xy-coordinates" of the origin cell of the bond.
+            !Then we determine the "ij-coordinates" of the origin cell of the bond.
             cell1 = cellCord(b)
             i_c = cell1(1); j_c = cell1(2); t = cell1(3)
 
             !Now we randomly select a spin inside of the first cell of the bond.
             call random_number(u); s = 1 + floor((lambda**2)*u) !This yields an integer between 1 and lambda^2 (i.e. the total number of spins in a cell).
 
-            !And determine the "xy-coordinates" of the spin.
+            !And determine the "x1x2-coordinates" of the spin.
             spinTemp = spinCord(s, i_c, j_c)
             i_s = spinTemp(1); j_s = spinTemp(2)
 
@@ -488,7 +495,7 @@ contains
             !Next we find the position of the other cell associated with the bond, which we have denoted _p for 'pair'.
             !This is simple: "if we have a horisontal bond, the pair must be the cell to the right; otherwise it is the cell directly above".
             !That is, each cell has a vertical bond pointing upwards and a horisontal bond pointing to the right (it could equally well have been the left; physics is invariant to arbitrary coordinate definitions).
-            !With this knowledge, we can also trivially determine the nearest-neighbours of the paired cell without using PBC() again since it adds lots of overhead.
+            !Then we just call PBC like before and store the nearest neighbouring cells. Note that this is technically overkill, as one of the nearest neighbours will be the originating cell, but it's so quick that it doesn't matter - there are WAAAAAAAY worse parts of this program.
             if(t == 0) then
                 i_p_c = i_c; j_p_c = x_right
             else
@@ -500,7 +507,7 @@ contains
             !Now we randomly select a spin inside of the paired cell of the bond.
             call random_number(u); s = 1 + floor((lambda**2)*u) !This *should* be an integer between 1 and lambda^2 (i.e. the total number of spins in a cell).
 
-            !And determine the "xy-coordinates" of the spin.
+            !And determine the "x1x2-coordinates" of the spin.
             spinTemp = spinCord(s, i_p_c, j_p_c)
             i_p_s = spinTemp(1); j_p_s = spinTemp(2)
 
@@ -509,12 +516,12 @@ contains
             !-Evaporation of top row--------------------------------------------
             if(i_c == 1 .and. spin == 0) then
                 call evap(i_s, j_s, i_c, j_c, sigma, numSpins)
-                if(fastEvap .eqv. .true.) call evapRand(i_s, j_s, i_c, j_c, sigma, numSpins)
+                if(fastEvap .eqv. .true.) call evapRand(i_s, j_s, i_c, j_c, sigma, numSpins) !This is the 'random evaporation' bollocks to avoid the streaks.
                 GO TO 10
             endif
 
             !-Solvent volatility------------------------------------------------
-            !This is the upwards drift. It's pretty janky at the moment since it just switches spin and spin_p with some probability phi when spin = 0 and spin_p /= 0.
+            !This is the upwards drift due to the volatility.
             if(phi == 0) GO TO 30
             if(t == 1 .and. spin_p == 0 .and. spin /= 0) then
                 call random_number(P) !Compare to a pseudo-random number between 0 and 1.
@@ -535,6 +542,7 @@ contains
             if(t == 1) cellNeighbours = [[i_c,x_left], [y_down,j_c], [i_c,x_right], &
                 [i_p_c,x_p_right], [y_p_up,j_p_c], [i_p_c,x_p_left]]
 
+            !Now we simply call the energySelected function, with the needed information and BAM! Just like that, we're done. Thanks, objective oriented programming.
             energy = energySelected(spin, spin_p, t, numSpins, i_c, j_c, i_p_c, j_p_c, cellNeighbours)
             dE = energy(2) - energy(1)
 
@@ -544,6 +552,7 @@ contains
             !Compare to a pseudo-random number between 0 and 1.
             call random_number(P)
 
+            !And switch spins if it is energetically favourable or uphill if P <= w.
             if(dE <= 0 .or. P <= w) then
                 call updateSigma(spin, spin_p, sigma, i_s, j_s, i_p_s, j_p_s)
                 call recalcSpins(spin, spin_p, numSpins, i_c, j_c, i_p_c, j_p_c)
@@ -565,22 +574,15 @@ program main
     implicit none
 
     !-Input parameters----------------------------------------------------------
-    !Here L is the number of sites along one line of the 2D plane. So L = 128 yields a 128 x 128 spin matrix. In the future, non-square lattices should be implemented (super easy fix).
-    !Lambda is the number of spins along one line in each 2D square cell (in the non-square case later, I think the cells should still be squares, but that's debatable I guess).
-    !numIters represents the number of iterations between each exported frame and numFrames is the total number of frames.
-    !beta is 1/kB*T, p0 and p1 are the initial concentrations of 0 and +1 spins, respectively. Currently I only set p0 and let p1 be half what's left (always 50/50 of -1 and +1 species of remainder after solvent has been introduced).
-    !J_str is the matrix representation of the interaction parameters (J_00 = J_11 = J_-1-1 = 0; J_01 = J_10 = J_0-1 = J_-10 = 1; J_-11 = J_1-1 = 6 in this case).
-    !sigma will be an L x L spin matrix (values -1, 0 or 1 at all places).
-    !n, i and j are used in loops.
-    !stat is used to remove old frames.
+    !n, i and j are used in loops; stat is used to remove old frames.
     !file_id and file_name hold info for saving/erasing the frames.
-    !start, finish, timeLeft etc. are only used to keep track of the time and to provide some nice prompts to the user.
-    integer :: i, j, stat
+    !start, finish, etc. are only used to keep track of the time and to provide some nice prompts to the user; conc is the current concentration of zeros; MCS is the current number of MCS (for prompt).
+    integer :: i, j, n, stat
     character(32) :: file_id, file_name
     logical :: file_exists = .true.
     real :: start, finish, numHour, numMin, numSec, conc, MCS
 
-    !This clears the frames/ directory!
+    !This clears the frames/ directory using magic.
     n = 0
     do while (file_exists .eqv. .true.)
         n = n + 1
@@ -600,11 +602,11 @@ program main
 !    enddo
 !    close(10)
 
-    call setupRNG()
+    call setupRNG() !Sets up the RNG (either with a constant seed or using UNIX time for m-m-m-aximum pseudo-randomness!).
     call genSpins(L, sigma, p0, p1) !Generates a pseudo-random L x L "tenary spin matrix".
 
     numSpins = initialNum(L, lambda, sigma) !Determines the initial number of spins.
-    conc = real(count(sigma == 0))/real(L**2)
+    conc = real(count(sigma == 0))/real(L**2) !Calculates the intial concentration.
 
     call cpu_time(start) !Keeps track of the time.
     !This is the main loop; it writes the .dat files and calls the metropolis() subroutine to alter the spin matrix and it also informs the user about the number of frames, time remaining etc.
@@ -619,8 +621,7 @@ program main
         close(10)
 
         call metropolis(L, lambda, sigma, numSpins, numIters, beta) !Returns the spin matrix after numIters.
-
-        conc = real(count(sigma == 0))/real(L**2)
+        conc = real(count(sigma == 0))/real(L**2) !Recalculate the concentration after numIters and compare to cutoffConc.
 
         !Just some nice feedback to the user.
         if(mod(n, 10) == 0 .or. n == 2) then
@@ -638,6 +639,7 @@ program main
         n = n + 1
     enddo
 
+    !Final feedback after completion.
     call cpu_time(finish)
     numHour = aint(finish/3600)
     numMin = aint((finish - (numHour)*3600)/60)
