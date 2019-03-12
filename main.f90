@@ -10,11 +10,12 @@ module constants
     !beta is the reciprocal temperature; p0 is the concentration of zeroes at t = 0; p1 is the concentration of +1 (and -1 at the moment); phi is to volatility; cutoffConc is the final residual solvent concentration - set to negative number for infinite run-time.
     !To boolean constSeed uses a constant seed for the RNG (for debugging); fastEvap uses the evapRand subroutine (which is unphysical garbage); FBC enables the free boundary conditions.
     !sigma is the spin matrix; numSpins is a tensor of rank 3 which stores the number of spins of each spices per cell.
-    integer,parameter :: L = 256, lambda = 4, numIters = 2**20
-    real,parameter :: beta = 0.6, p0 = 0.6, p1 = (1 - p0)/2, phi = 0, cutoffConc = 0.1
-    logical,parameter :: constSeed = .false., fastEvap = .false., FBC = .true.
+    integer,parameter :: L = 128, lambda = 4, numIters = 2**28
+    real,parameter :: beta = 0.6, p0 = 0.4, p1 = (1 - p0)/2, phi = 0, cutoffConc = 0.1
+    logical,parameter :: constSeed = .false., fastEvap = .false., FBC = .false.
     integer :: sigma(L,L), numSpins(L/lambda,L/lambda,1:3)
 !    integer,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !The result is a 3 x 3 row matrix, i.e. the first three values correspond to the elements in the first row, etc.
+    integer,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 2, 1, 0, 1, 2, 1, 0], shape(J_str))) !The result is a 3 x 3 row matrix, i.e. the first three values correspond to the elements in the first row, etc.
 
 !    real,dimension(3, 3) :: J_str = transpose(reshape(1.0*[0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !1
 !    real,dimension(3, 3) :: J_str = transpose(reshape(0.3*[0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !2
@@ -39,8 +40,8 @@ module constants
 !    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*[0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !1
 !    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*0.01* &
 !        [0, 80, 160, 80, 0, 80, 160, 80, 0], shape(J_str))) !Based on manual tests. Here be dragons.
-    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*0.01* &
-        [0, 75, 125, 75, 0, 75, 125, 75, 0], shape(J_str))) !These are the best values, IMO.
+!    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*0.01* &
+!        [0, 75, 125, 75, 0, 75, 125, 75, 0], shape(J_str))) !These are the best values, IMO.
  
 !    real,dimension(3, 3) :: J_str = transpose(reshape(0.01* &
 !        [0, 75, 125, 75, 0, 75, 125, 75, 0], shape(J_str))) !UNSCALED
@@ -253,7 +254,7 @@ contains
         integer, dimension(1:3) :: numSpinsA, numSpinsB, numSpinsAprop, numSpinsBprop
         integer, dimension(1:3) :: numSpinsIntA, numSpinsIntB
         real :: E_current, E_proposed, energyResult(1:2) 
-        real :: c = 1.0 !Allows for tuning of the interaction between cells.
+        real :: c = 1.0*10**(0) !Allows for tuning of the interaction between cells.
         real :: c2 = 1.0
 
         !Reset the values before each run.

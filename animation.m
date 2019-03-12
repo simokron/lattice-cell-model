@@ -17,15 +17,14 @@ else
     directory = [prefix 's_lambda_4-L_256_frames_v3-c_1-J_squareScaled-numIters_2-24-FBC'];
 end
 lambda = 4;
-beta = 0.6;
-numIters = 2^24;
+numIters = 2^28;
 
-cellVisualisation = true;
-linInt = true; m = 1.5;
+cellVisualisation = false;
+linInt = false; m = 1.5;
 gridOn = false;
 
-f = 'pdf'; %pdf or png!
-export = true; %Turns on the frame export! For GIF exporting, use exporGIF below. DO NOT USE BOTH!
+f = 'png'; %pdf or png!
+export = false; %Turns on the frame export! For GIF exporting, use exporGIF below. DO NOT USE BOTH!
 exportGIF = false;
 
 if exportGIF == true
@@ -40,15 +39,15 @@ height = 838;
 width = 800;
 
 sequence = false; %true for whole sequence
-once = true; %false for currently running simulations
+once = false; %false for currently running simulations
 
 a = dir([directory '/*.dat']);
 b = numel(a);
 
 if b == 0
-   fprintf('Empty directory...\n')
-   fprintf('Aborting!\n')
-   return;
+    fprintf('Empty directory...\n')
+    fprintf('Aborting!\n')
+    return;
 end
 
 fprintf(['numFrames = ' num2str(b) '\n'])
@@ -65,10 +64,10 @@ while go
     clc;
     fprintf(['numFrames = ' num2str(b) '\n'])
     if exportGIF == true
-       fprintf('Exporting frames as GIF...\n') 
+        fprintf('Exporting frames as GIF...\n')
     end
     
-    if sequence == true || export == true || exportGIF == true
+    if sequence == true !|| export == true || exportGIF == true
         lowLim = 1;
     else
         lowLim = b;
@@ -170,7 +169,7 @@ while go
                     end
                     
                     HSV = rgb2hsv(imTest);
-
+                    
                     % "20% more" saturation:
                     HSV(:, :, 2) = HSV(:, :, 2) * 1.25;
                     % or add:
@@ -217,7 +216,12 @@ while go
             %set(findall(gca, 'type', 'text'), 'visible', 'on')
             if export == true
                 pause(1)
-                set(findall(gca, 'type', 'text'), 'visible', 'off')
+                if f == 'png'
+                    set(gca,'FontSize',10)
+                end
+                if f ~= 'png'
+                    set(findall(gca, 'type', 'text'), 'visible', 'off')
+                end
                 %set(gca,'Position', [0 0 1 1])
                 fig = gcf;
                 %filename = sprintf([num2str(lambda) '_' num2str(size(frame,1)) '_beta_' strrep(num2str(beta),'.','') '_MCS_' num2str(round(MCS,0)) '_c0_0%d.' f],str2num(strrep(num2str(round(c0,2)),'.','')));
@@ -237,7 +241,7 @@ while go
                 [imind,cm] = rgb2ind(im,256);
                 % Write to the GIF File
                 imwrite(imind,cm,filename,'gif', 'Loopcount',inf);
-                imwrite(imind,cm,filename,'gif','WriteMode','append','DelayTime',2); 
+                imwrite(imind,cm,filename,'gif','WriteMode','append','DelayTime',2);
             end
             pause(1);
         else
@@ -276,7 +280,7 @@ while go
                     end
                     
                     HSV = rgb2hsv(imTest);
-
+                    
                     % "20% more" saturation:
                     HSV(:, :, 2) = HSV(:, :, 2) * 1.25;
                     % or add:
@@ -323,7 +327,12 @@ while go
                     %k = 0.1;
                     if round(c0,2) == k/10 && k/10 < current
                         current = k/10;
-                        set(findall(gca, 'type', 'text'), 'visible', 'off')
+                        if f == 'png'
+                            set(gca,'FontSize',10)
+                        end
+                        if f ~= 'png'
+                            set(findall(gca, 'type', 'text'), 'visible', 'off')
+                        end
                         %set(gca,'Position', [0 0 1 1])
                         fig = gcf;
                         %filename = sprintf([num2str(lambda) '_' num2str(size(frame,1)) '_beta_' strrep(num2str(beta),'.','') '_MCS_' num2str(round(MCS,0)) '_c0_0%d.' f],str2num(strrep(num2str(round(c0,2)),'.','')));
@@ -336,7 +345,7 @@ while go
                     end
                 end
             elseif exportGIF == true
-                                %set(findall(gca, 'type', 'text'), 'visible', 'off')
+                %set(findall(gca, 'type', 'text'), 'visible', 'off')
                 h = gcf;
                 % Capture the plot as an image
                 frame = getframe(h);
@@ -355,8 +364,8 @@ while go
     if once == true || export == true
         break;
     elseif exportGIF == true
-       imwrite(imind,cm,filename,'gif','WriteMode','append','DelayTime',5);
-       break;
+        imwrite(imind,cm,filename,'gif','WriteMode','append','DelayTime',5);
+        break;
     end
     
     numPause = 0;

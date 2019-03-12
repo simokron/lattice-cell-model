@@ -26,9 +26,9 @@ yF2 = [1.21179819, 1.27475214, 1.43546546, 1.71248770, 1.98802304]; %FBC; L = 51
 set(gca,'FontSize',14)
 grid on
 hold on
-plot(1024./x,yP,'.k', 'MarkerSize',20)
-plot(1024./x,yF,'.m', 'MarkerSize',20)
-%plot(512./x,yF2,'.m', 'MarkerSize',20)
+%plot(x,yP,'.k', 'MarkerSize',20)
+plot(x,yF,'.k', 'MarkerSize',20)
+plot(x,yF2,'.m', 'MarkerSize',20)
 %plot(exp([-1:0.01:max(x)]),exp(f([-1:0.01:max(x)])),'-m')
 %plot([-1:0.01:max(x)],f([-1:0.01:max(x)]),'-m')
 %plot(MCS,y,'.k')
@@ -43,22 +43,22 @@ hold off
 %set(gca, 'XScale', 'log')
 
 % Cosmetic plot stuff.
-xlabel('$L/\lambda$ [$\log_2$]')
+xlabel('$\lambda$ [$\log_2$]')
 ylabel('$\langle \mathcal{H}_{\textnormal{int}} \rangle$')
 %title('Line profiles')
-legend('PBC','FBC','Location','northeast')
-%legend('$L = 1024$','$L = 512$','Location','northeast')
+%legend('PBC','FBC','Location','southeast')
+legend('$L = 1024$','$L = 512$','Location','southeast')
 box on
 
-%xlim([min(x) - 1*min(x), max(x) + 0.1*max(x)]);
-%ylim([1 2]);
+xlim([min(x) - 1*min(x), max(x) + 0.1*max(x)]);
+ylim([min([yF yF2]) - 0.1*min([yF yF2]), max([yF yF2]) + 0.1*max([yF yF2])]);
 %set(gca, 'YScale', 'log')
 %set(gca, 'XScale', 'log')
 %
 %xticks(unique([sort(512./x) sort(1024./x)]))
 %xticklabels(split(num2str(log2(unique([sort(512./x) sort(1024./x)])))))
-xticks(unique([sort(1024./x)]))
-xticklabels(split(num2str(log2(unique([sort(1024./x)])))))
+xticks(unique([sort(x)]))
+xticklabels(split(num2str(log2(unique([sort(x)])))))
 yticks([0:0.2:100])
 %yticklabels({'0.4','0.6','0.8','1.0','1.2','1.4','1.6','1.8'})
 

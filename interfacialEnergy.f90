@@ -267,7 +267,6 @@ program interfacialEnergy
     close(10)
 
     energyCells = calcEnergy(sigma)
-
-    print *, sum(energyCells)/L**2
+    print *, 'H_int = ', sum(energyCells)/L**2
 
 end program interfacialEnergy
