@@ -50,12 +50,18 @@ for n = 1:skipFrames:b
     
     k = 1;
     for i = 1:lambda:size(frame,1)
-        cTemp = 0;
+        cTemp = 0;cTemp1 = 0;cTemp2 = 0;
         for x1 = i:1:i+lambda-1
             cTemp = cTemp + size(frame,1) - nnz(frame(x1,:));
+            cTemp1 = cTemp1 + sum(frame(x1,:) == 1);
+            cTemp2 = cTemp2 + sum(frame(x1,:) == -1);
         end
         cTemp = cTemp/(lambda^2 * size(frame,1)/lambda);
+        cTemp1 = cTemp1/(lambda^2 * size(frame,1)/lambda);
+        cTemp2 = cTemp2/(lambda^2 * size(frame,1)/lambda);
         c0(k) = cTemp;
+        c1(k) = cTemp1;
+        c2(k) = cTemp2;
         k = k+1;
     end
     
@@ -68,32 +74,35 @@ for n = 1:skipFrames:b
     h1 = axes;
     set(gca,'FontSize',12)
     hold on
-    plot([1:1:size(frame,1)/lambda]',c0,'.k')
-    plot([1:0.01:size(frame,1)/lambda],f([1:0.01:size(frame,1)/lambda]),'-m')
-    plot([1:0.01:size(frame,1)/lambda],g([1:0.01:size(frame,1)/lambda]),'--','Color', [95 95 255]/255)
+    plot([1:1:size(frame,1)/lambda]',c0,'.r', 'MarkerSize',20)
+    plot([1:1:size(frame,1)/lambda]',c1,'.k', 'MarkerSize',20)
+    plot([1:1:size(frame,1)/lambda]',c2,'ok', 'MarkerSize',5)
+    %plot([1:0.01:size(frame,1)/lambda],f([1:0.01:size(frame,1)/lambda]),'-m')
+    %plot([1:0.01:size(frame,1)/lambda],g([1:0.01:size(frame,1)/lambda]),'--','Color', [95 95 255]/255)
     hold off
     
     % Cosmetic plot stuff.
     xlabel('$i$')
-    ylabel('$c_0$')
+    ylabel('Concentrations')
     title(['Concentration of zeros = ' num2str(round(sum(c0)/size(c0,2),2))])
-    %legend('Data points','Exponential fit','Location','northwest')
-    legend('Data points','Exponential fit','Linear fit','Location','northwest')
+    legend('$c_0$','$c_{+1}$','$c_{-1}$','Location','northwest')
+    %legend('Data points','Exponential fit','Linear fit','Location','northwest')
     box on
     grid on
     
     xlim([1, size(frame,1)/lambda]);
-    ylim([0 1.0-kLim*n]);
+    %ylim([0 1.0-kLim*n]);
+    ylim([0 1.0]);
     xticks([0:size(c0,2)/8:size(c0,2)])
     %xticklabels(split(num2str(log2(unique([sort(x)])))))
     % yticks([0, 23, 143])
     %yticklabels({'0.4','0.6','0.8','1.0','1.2','1.4','1.6','1.8'})
     
-%     %Rotate ylabel, taking into account its size/centre relation.
-%     ylh = get(gca,'ylabel');
-%     gyl = get(ylh);
-%     ylp = get(ylh, 'Position');
-%     set(ylh, 'Rotation',0, 'Position',ylp, 'VerticalAlignment','middle', 'HorizontalAlignment','right');
+    %     %Rotate ylabel, taking into account its size/centre relation.
+    %     ylh = get(gca,'ylabel');
+    %     gyl = get(ylh);
+    %     ylp = get(ylh, 'Position');
+    %     set(ylh, 'Rotation',0, 'Position',ylp, 'VerticalAlignment','middle', 'HorizontalAlignment','right');
     %tightfig;
     set(gcf,'Position', [0 0 650 600])
     

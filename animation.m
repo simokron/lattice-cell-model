@@ -17,29 +17,34 @@ else
     directory = [prefix 's_lambda_4-L_256_frames_v3-c_1-J_squareScaled-numIters_2-24-FBC'];
 end
 lambda = 4;
-numIters = 2^28;
+numIters = 2^24;
 
-cellVisualisation = false;
-linInt = false; m = 1.5;
-gridOn = false;
+cellVisualisation = true;
+linInt = true; m = 1.5; %m controls the contrast. Decrease to 1.0 for maximum contrast. 1.5 is a decent value.
+gridOn = false; %will be disabled if linInt = true.
 
-f = 'png'; %pdf or png!
+FourierTransform = true; %disables gridOn an shows the fft image.
+FTMap = parula(4096);
+
+f = 'pdf'; %pdf or png!
 export = false; %Turns on the frame export! For GIF exporting, use exporGIF below. DO NOT USE BOTH!
+gcaOnly = false;
 exportGIF = false;
+pauseTime = 0.1; %The time between each frame in the GIF.
+
+sequence = false; %true for whole sequence (always true for exports).
+once = true; %false for currently running simulations.
 
 if exportGIF == true
     skipFrames = 1;
 else
     skipFrames = 1;
 end
-pauseTime = 0.1;
 
-current = 1.0; %relates to exporting - largest concentration to save (usually best keps at 1.0)
+%The dimensions in pixels of the png/GIF. Note that the height should be increased to account for the title text.
 height = 838;
 width = 800;
-
-sequence = false; %true for whole sequence
-once = false; %false for currently running simulations
+current = 1.0; %relates to exporting - largest concentration to save (usually best keps at 1.0)
 
 a = dir([directory '/*.dat']);
 b = numel(a);
@@ -67,7 +72,7 @@ while go
         fprintf('Exporting frames as GIF...\n')
     end
     
-    if sequence == true !|| export == true || exportGIF == true
+    if sequence == true || export == true || exportGIF == true
         lowLim = 1;
     else
         lowLim = b;
@@ -133,238 +138,162 @@ while go
                 0 0 1];
         end
         
-        if n == 1
-            if cellVisualisation == true
-                im = imfuse(old, rgb_image,'blend');
-                
-                Idouble = im2double(im);
-                avg = mean2(Idouble);
-                sigma = std2(Idouble);
-                if avg-m*sigma > 0
-                    if avg+m*sigma < 1
-                        im = imadjust(im,[avg-m*sigma avg+m*sigma],[]);
-                    else
-                        im = imadjust(im,[avg-m*sigma 1],[]);
-                    end
+        if cellVisualisation == true
+            im = imfuse(old, rgb_image,'blend');
+            
+            Idouble = im2double(im);
+            avg = mean2(Idouble);
+            sigma = std2(Idouble);
+            if avg-m*sigma > 0
+                if avg+m*sigma < 1
+                    im = imadjust(im,[avg-m*sigma avg+m*sigma],[]);
                 else
-                    if avg+m*sigma < 1
-                        im = imadjust(im,[0 avg+m*sigma],[]);
-                    else
-                        im = imadjust(im,[0 1],[]);
+                    im = imadjust(im,[avg-m*sigma 1],[]);
+                end
+            else
+                if avg+m*sigma < 1
+                    im = imadjust(im,[0 avg+m*sigma],[]);
+                else
+                    im = imadjust(im,[0 1],[]);
+                end
+            end
+            
+            if linInt == true
+                im = im2double(im);
+                imInt = interp3(im,2,'linear');
+                
+                for i = 1:size(imInt,1)
+                    for j = 1:size(imInt,2)
+                        h = 0;
+                        for k = 1:size(imInt,3)/3:size(imInt,3)-size(imInt,3)/3+1
+                            imTest(i,j,k+h*(1-size(imInt,3)/3)) = sum(imInt(i,j,k:k+size(imInt,3)/3-1))/(size(imInt,3)/3);
+                            h = h + 1;
+                        end
                     end
                 end
                 
-                if linInt == true
-                    im = im2double(im);
-                    imInt = interp3(im,2,'linear');
-                    
-                    for i = 1:size(imInt,1)
-                        for j = 1:size(imInt,2)
-                            h = 0;
-                            for k = 1:size(imInt,3)/3:size(imInt,3)-size(imInt,3)/3+1
-                                imTest(i,j,k+h*(1-size(imInt,3)/3)) = sum(imInt(i,j,k:k+size(imInt,3)/3-1))/(size(imInt,3)/3);
-                                h = h + 1;
-                            end
-                        end
-                    end
-                    
-                    HSV = rgb2hsv(imTest);
-                    
-                    % "20% more" saturation:
-                    HSV(:, :, 2) = HSV(:, :, 2) * 1.25;
-                    % or add:
-                    % HSV(:, :, 2) = HSV(:, :, 2) + 0.2;
-                    HSV(HSV > 1) = 1;  % Limit values
-                    imTest = hsv2rgb(HSV);
-                    
+                HSV = rgb2hsv(imTest);
+                
+                % "25% more" saturation:
+                HSV(:, :, 2) = HSV(:, :, 2) * 1.25;
+                % or add:
+                % HSV(:, :, 2) = HSV(:, :, 2) + 0.2;
+                HSV(HSV > 1) = 1;  % Limit values
+                imTest = hsv2rgb(HSV);
+                
+                imagesc(imTest);
+                gridOn = false;
+                
+                if FourierTransform == true
+                    colormap(FTMap);
+                    Y = fftshift(fft2(imTest(:,[1:size(imTest,1)])));
+                    imagesc(abs(Y));
+                else
                     imagesc(imTest);
-                    sF = size(imTest,1)/size(im,1);
-                    
+                end
+                
+            else
+                if FourierTransform == true
+                    colormap(FTMap);
+                    Y = fftshift(fft2(im(:,[1:size(im,1)])));
+                    imagesc(abs(Y));
+                    gridOn = false;
                 else
                     imagesc(im);
                     %imagesc(rgb_image); %DEBUGGING
                     sF = 1;
-                    
                 end
+                
+            end
+        else
+            if FourierTransform == true
+                colormap(FTMap);
+                Y = fftshift(fft2(frame(:,[1:size(frame,1)])));
+                imagesc(abs(Y));
             else
                 colormap(mymap)
                 imagesc(frame);
             end
-            
-            set(gca,'FontSize',14)
-            title(['Concentration of zeros = ' num2str(round(c0,2)) '; MCS = ' num2str(MCS)])
-            if gridOn == true
-                if cellVisualisation == true
-                    xticks([0:1:size(cDown_cell,1)]*sF+0.5)
-                    yticks([0:1:size(cDown_cell,2)]*sF+0.5)
-                else
-                    xticks([0:lambda:size(frame,1)]+0.5)
-                    yticks([0:lambda:size(frame,2)]+0.5)
-                end
-                grid on
+        end
+        
+        set(gca,'FontSize',14)
+        title(['Concentration of zeros = ' num2str(round(c0,2)) '; MCS = ' num2str(MCS)])
+        if gridOn == true
+            if cellVisualisation == true
+                xticks([0:1:size(cDown_cell,1)]*sF+0.5)
+                yticks([0:1:size(cDown_cell,2)]*sF+0.5)
+            else
+                xticks([0:lambda:size(frame,1)]+0.5)
+                yticks([0:lambda:size(frame,2)]+0.5)
             end
-            ax = gca;
-            ax.GridAlpha = 0.8;
-            ax.LineWidth = 1.0;
-            ax.YAxis.Visible = 'off';
-            ax.XAxis.Visible = 'off';
-            if export == false
-                set(gcf,'Position', [0 0 width height])
-                set(gca,'Position', [0 0 1 width/height])
+            grid on
+        end
+        ax = gca;
+        ax.GridAlpha = 0.8;
+        ax.LineWidth = 1.0;
+        ax.YAxis.Visible = 'off';
+        ax.XAxis.Visible = 'off';
+        set(gcf,'Units','pixels');
+        set(gcf,'Position', [0 0 width height])
+        set(gca,'Position', [0 0 1 width/height])
+        %set(gca,'visible','off');
+        %set(findall(gca, 'type', 'text'), 'visible', 'on')
+        if n == 1
+            pause(1)
+        end
+        if export == true
+            if gcaOnly == true
+                set(gcf,'Position', [0 0 800 800])
+                set(gca,'Position', [0 0 1 1])
+            elseif sum(f == 'pdf') == 3
+                set(gcf,'Position', [0 0 300 300])
+                set(gca,'Position', [0 0 1 1])
             end
-            %set(gca,'visible','off');
-            %set(findall(gca, 'type', 'text'), 'visible', 'on')
-            if export == true
-                pause(1)
-                if f == 'png'
-                    set(gca,'FontSize',10)
+            for k = 1:9
+                %k = 0.1;
+                if round(c0,2) == k/10 && k/10 < current
+                    current = k/10;
+                    fig = gcf;
+                    filename = sprintf([directory '_MCS_' num2str(round(MCS,0)) '_c0_0%d.' f],str2num(strrep(num2str(round(c0,2)),'.','')));
+                    if sum(f == 'png') == 3
+                        frame = getframe(fig);
+                        im = frame2im(frame);
+                        [imind,cm] = rgb2ind(im,256);
+                        imwrite(imind,cm,filename,f);
+                    else
+                        set(fig,'Units','Inches');
+                        pos = get(fig,'Position');
+                        set(fig,'PaperPositionMode','Auto','PaperUnits','Inches','PaperSize',[pos(3), pos(4)])
+                        print(fig,filename,'-dpdf','-r0')
+                    end
                 end
-                if f ~= 'png'
-                    set(findall(gca, 'type', 'text'), 'visible', 'off')
-                end
-                %set(gca,'Position', [0 0 1 1])
-                fig = gcf;
-                %filename = sprintf([num2str(lambda) '_' num2str(size(frame,1)) '_beta_' strrep(num2str(beta),'.','') '_MCS_' num2str(round(MCS,0)) '_c0_0%d.' f],str2num(strrep(num2str(round(c0,2)),'.','')));
-                filename = sprintf([directory '_MCS_' num2str(round(MCS,0)) '_c0_0%d.' f],str2num(strrep(num2str(round(c0,2)),'.','')));
-                fig.PaperUnits = 'points';
-                fig.PaperPosition = [0 0 300 300];
-                print(filename,['-d' f]);
-                set(findall(gca, 'type', 'text'), 'visible', 'on')
-                %set(gca,'Position', [0 0 1 width/height])
-            elseif exportGIF == true
-                pause(1)
-                h = gcf;
-                filename = [directory '.gif'];
-                % Capture the plot as an image
-                frame = getframe(h);
-                im = frame2im(frame);
-                [imind,cm] = rgb2ind(im,256);
-                % Write to the GIF File
+            end
+        elseif exportGIF == true
+            h = gcf;
+            filename = [directory '.gif'];
+            frame = getframe(h);
+            im = frame2im(frame);
+            [imind,cm] = rgb2ind(im,256);
+            if n == 1
                 imwrite(imind,cm,filename,'gif', 'Loopcount',inf);
                 imwrite(imind,cm,filename,'gif','WriteMode','append','DelayTime',2);
-            end
-            pause(1);
-        else
-            if cellVisualisation == true
-                im = imfuse(old, rgb_image,'blend');
-                
-                Idouble = im2double(im);
-                avg = mean2(Idouble);
-                sigma = std2(Idouble);
-                if avg-m*sigma > 0
-                    if avg+m*sigma < 1
-                        im = imadjust(im,[avg-m*sigma avg+m*sigma],[]);
-                    else
-                        im = imadjust(im,[avg-m*sigma 1],[]);
-                    end
-                else
-                    if avg+m*sigma < 1
-                        im = imadjust(im,[0 avg+m*sigma],[]);
-                    else
-                        im = imadjust(im,[0 1],[]);
-                    end
-                end
-                
-                if linInt == true
-                    im = im2double(im);
-                    imInt = interp3(im,2,'linear');
-                    
-                    for i = 1:size(imInt,1)
-                        for j = 1:size(imInt,2)
-                            h = 0;
-                            for k = 1:size(imInt,3)/3:size(imInt,3)-size(imInt,3)/3+1
-                                imTest(i,j,k+h*(1-size(imInt,3)/3)) = sum(imInt(i,j,k:k+size(imInt,3)/3-1))/(size(imInt,3)/3);
-                                h = h + 1;
-                            end
-                        end
-                    end
-                    
-                    HSV = rgb2hsv(imTest);
-                    
-                    % "20% more" saturation:
-                    HSV(:, :, 2) = HSV(:, :, 2) * 1.25;
-                    % or add:
-                    % HSV(:, :, 2) = HSV(:, :, 2) + 0.2;
-                    HSV(HSV > 1) = 1;  % Limit values
-                    imTest = hsv2rgb(HSV);
-                    
-                    imagesc(imTest)
-                    sF = size(imTest,1)/size(im,1);
-                    
-                else
-                    imagesc(im);
-                    %imagesc(rgb_image); %DEBUGGING
-                    sF = 1;
-                end
             else
-                colormap(mymap);
-                imagesc(frame);
-            end
-            
-            set(gca,'FontSize',14)
-            title(['Concentration of zeros = ' num2str(round(c0,2)) '; MCS = ' num2str(MCS)])
-            if gridOn == true
-                if cellVisualisation == true
-                    xticks([0:1:size(cDown_cell,1)]*sF+0.5)
-                    yticks([0:1:size(cDown_cell,2)]*sF+0.5)
-                else
-                    xticks([0:lambda:size(frame,1)]+0.5)
-                    yticks([0:lambda:size(frame,2)]+0.5)
-                end
-                grid on
-            end
-            ax = gca;
-            ax.GridAlpha = 0.8;
-            ax.LineWidth = 1.0;
-            ax.YAxis.Visible = 'off';
-            ax.XAxis.Visible = 'off';
-            if export == false
-                set(gcf,'Position', [0 0 width height])
-                set(gca,'Position', [0 0 1 width/height])
-            end
-            if export == true %&& n == 900
-                for k = 1:9
-                    %k = 0.1;
-                    if round(c0,2) == k/10 && k/10 < current
-                        current = k/10;
-                        if f == 'png'
-                            set(gca,'FontSize',10)
-                        end
-                        if f ~= 'png'
-                            set(findall(gca, 'type', 'text'), 'visible', 'off')
-                        end
-                        %set(gca,'Position', [0 0 1 1])
-                        fig = gcf;
-                        %filename = sprintf([num2str(lambda) '_' num2str(size(frame,1)) '_beta_' strrep(num2str(beta),'.','') '_MCS_' num2str(round(MCS,0)) '_c0_0%d.' f],str2num(strrep(num2str(round(c0,2)),'.','')));
-                        filename = sprintf([directory '_MCS_' num2str(round(MCS,0)) '_c0_0%d.' f],str2num(strrep(num2str(round(c0,2)),'.','')));
-                        fig.PaperUnits = 'points';
-                        fig.PaperPosition = [0 0 300 300];
-                        print(filename,['-d' f]);
-                        set(findall(gca, 'type', 'text'), 'visible', 'on')
-                        %set(gca,'Position', [0 0 1 width/height])
-                    end
-                end
-            elseif exportGIF == true
-                %set(findall(gca, 'type', 'text'), 'visible', 'off')
-                h = gcf;
-                % Capture the plot as an image
-                frame = getframe(h);
-                im = frame2im(frame);
-                [imind,cm] = rgb2ind(im,256);
-                % Write to the GIF File
                 imwrite(imind,cm,filename,'gif','WriteMode','append','DelayTime',pauseTime);
             end
-            %pause(1)
-            pause(0.0333); % 0.0167 for 60 FPS, 0.0333 for 30 FPS
-            %pause(0.0167);
         end
+        
+        %pause(1)
+        pause(0.0333); % 0.0167 for 60 FPS, 0.0333 for 30 FPS
+        %pause(0.0167);
     end
     sequence = false;
     
-    if once == true || export == true
-        break;
-    elseif exportGIF == true
+    if exportGIF == true
         imwrite(imind,cm,filename,'gif','WriteMode','append','DelayTime',5);
+        break;
+    end
+    
+    if once == true || export == true
         break;
     end
     
