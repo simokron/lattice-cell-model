@@ -74,9 +74,9 @@ for n = 1:skipFrames:b
     h1 = axes;
     set(gca,'FontSize',12)
     hold on
+        plot([1:1:size(frame,1)/lambda]',c2,'ok', 'MarkerSize',5)
     plot([1:1:size(frame,1)/lambda]',c0,'.r', 'MarkerSize',20)
     plot([1:1:size(frame,1)/lambda]',c1,'.k', 'MarkerSize',20)
-    plot([1:1:size(frame,1)/lambda]',c2,'ok', 'MarkerSize',5)
     %plot([1:0.01:size(frame,1)/lambda],f([1:0.01:size(frame,1)/lambda]),'-m')
     %plot([1:0.01:size(frame,1)/lambda],g([1:0.01:size(frame,1)/lambda]),'--','Color', [95 95 255]/255)
     hold off
@@ -85,7 +85,7 @@ for n = 1:skipFrames:b
     xlabel('$i$')
     ylabel('Concentrations')
     title(['Concentration of zeros = ' num2str(round(sum(c0)/size(c0,2),2))])
-    legend('$c_0$','$c_{+1}$','$c_{-1}$','Location','northwest')
+    legend('$c_{-1}$','$c_{0}$','$c_{+1}$','Location','northwest')
     %legend('Data points','Exponential fit','Linear fit','Location','northwest')
     box on
     grid on

@@ -8,31 +8,31 @@ set(groot, 'defaultAxesTickLabelInterpreter','latex');
 set(groot, 'defaultTextInterpreter','latex');
 set(groot, 'defaultLegendInterpreter','latex');
 
-%prefix = 'squareScaling/';
-prefix = 'PBCvsFBC/';
+prefix = 'squareScaling/';
+%prefix = 'PBCvsFBC/';
 %prefix = '';
 if isempty(prefix) == true
     directory = [prefix 'frames'];
 else
-    directory = [prefix 's_lambda_4-L_256_frames_v3-c_1-J_squareScaled-numIters_2-24-FBC'];
+    directory = [prefix 's_lambda_4-L_128_frames_v3-c_1-J_ORIGINALsquareScaled-numIters_2-22-PBC'];
 end
 lambda = 4;
-numIters = 2^24;
+numIters = 2^22;
 
-cellVisualisation = true;
+cellVisualisation = false;
 linInt = true; m = 1.5; %m controls the contrast. Decrease to 1.0 for maximum contrast. 1.5 is a decent value.
-gridOn = false; %will be disabled if linInt = true.
+gridOn = true; %will be disabled if linInt = true.
 
-FourierTransform = true; %disables gridOn an shows the fft image.
+FourierTransform = false; %disables gridOn an shows the fft image.
 FTMap = parula(4096);
 
 f = 'pdf'; %pdf or png!
-export = false; %Turns on the frame export! For GIF exporting, use exporGIF below. DO NOT USE BOTH!
+export = true; %Turns on the frame export! For GIF exporting, use exporGIF below. DO NOT USE BOTH!
 gcaOnly = false;
 exportGIF = false;
 pauseTime = 0.1; %The time between each frame in the GIF.
 
-sequence = false; %true for whole sequence (always true for exports).
+sequence = true; %true for whole sequence (always true for exports).
 once = true; %false for currently running simulations.
 
 if exportGIF == true
@@ -247,10 +247,16 @@ while go
                 set(gca,'Position', [0 0 1 1])
             elseif sum(f == 'pdf') == 3
                 set(gcf,'Position', [0 0 300 300])
-                set(gca,'Position', [0 0 1 1])
+                if gridOn == true
+                    set(gca,'Position', [0.003 0.005 0.99 0.99])
+                else
+                    set(gca,'Position', [0 0 1 1])
+                end
             end
             for k = 1:9
-                %k = 0.1;
+                if c0 <= 0.1
+                    k = 0.1;
+                end
                 if round(c0,2) == k/10 && k/10 < current
                     current = k/10;
                     fig = gcf;

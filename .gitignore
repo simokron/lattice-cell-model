@@ -35,4 +35,5 @@
 *.gif
 *.png
 *.pdf
-.fuse_*
+*.fuse_*
+*.m~
