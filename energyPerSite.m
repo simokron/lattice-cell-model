@@ -14,7 +14,7 @@ yP = [1.06241822, 1.14819252, 1.30451047, 1.53615487, 1.85011041]; %PBC; L = 102
 
 yF2 = [1.21179819, 1.27475214, 1.43546546, 1.71248770, 1.98802304]; %FBC; L = 512
 
-export = true;
+export = false;
 
 %f=fit(x',y','linear')
 
@@ -64,7 +64,7 @@ tightfig;
 
 if export == true
     fig = gcf;
-    filename = 'farts';
+    filename = 'energyPerSite';
     
     set(fig,'Units','Inches');
     pos = get(fig,'Position');

@@ -10,7 +10,7 @@ set(groot, 'defaultLegendInterpreter','latex');
 
 %prefix = 'squareScaling/';
 prefix = 'PBCvsFBC/';
-%prefix = 'evapRand/';
+%prefix = 'evapRand/';a
 %prefix = '';
 if isempty(prefix) == true
     directory = [prefix 'frames'];
@@ -104,6 +104,7 @@ for n = 1:skipFrames:b
     %     ylp = get(ylh, 'Position');
     %     set(ylh, 'Rotation',0, 'Position',ylp, 'VerticalAlignment','middle', 'HorizontalAlignment','right');
     %tightfig;
+    set(gcf,'Units','pixels');
     set(gcf,'Position', [0 0 650 600])
     
     if n == 1

@@ -8,32 +8,32 @@ set(groot, 'defaultAxesTickLabelInterpreter','latex');
 set(groot, 'defaultTextInterpreter','latex');
 set(groot, 'defaultLegendInterpreter','latex');
 
-prefix = 'squareScaling/';
+%prefix = 'squareScaling/';
 %prefix = 'PBCvsFBC/';
-%prefix = '';
+prefix = '';
 if isempty(prefix) == true
     directory = [prefix 'frames'];
 else
-    directory = [prefix 's_lambda_4-L_128_frames_v3-c_1-J_ORIGINALsquareScaled-numIters_2-22-PBC'];
+    directory = [prefix 's_lambda_4-L_256_frames_v3-c_1-J_squareScaled-numIters_2-24-FBC'];
 end
 lambda = 4;
-numIters = 2^22;
+numIters = 2^24;
 
 cellVisualisation = false;
-linInt = true; m = 1.5; %m controls the contrast. Decrease to 1.0 for maximum contrast. 1.5 is a decent value.
-gridOn = true; %will be disabled if linInt = true.
+linInt = false; m = 1.5; %m controls the contrast. Decrease to 1.0 for maximum contrast. 1.5 is a decent value.
+gridOn = false; %will be disabled if linInt = true.
 
 FourierTransform = false; %disables gridOn an shows the fft image.
 FTMap = parula(4096);
 
 f = 'pdf'; %pdf or png!
-export = true; %Turns on the frame export! For GIF exporting, use exporGIF below. DO NOT USE BOTH!
+export = false; %Turns on the frame export! For GIF exporting, use exporGIF below. DO NOT USE BOTH!
 gcaOnly = false;
 exportGIF = false;
 pauseTime = 0.1; %The time between each frame in the GIF.
 
 sequence = true; %true for whole sequence (always true for exports).
-once = true; %false for currently running simulations.
+once = false; %false for currently running simulations.
 
 if exportGIF == true
     skipFrames = 1;
@@ -53,6 +53,17 @@ if b == 0
     fprintf('Empty directory...\n')
     fprintf('Aborting!\n')
     return;
+end
+
+T = struct2table(a);
+sortedT = sortrows(T, 'date');
+sortedA = table2struct(sortedT);
+
+cT = datetime - datetime(getfield(sortedA(b),'date'));
+timeSinceLF = seconds(cT);
+
+if timeSinceLF > 60*5
+    once = true;
 end
 
 fprintf(['numFrames = ' num2str(b) '\n'])
@@ -289,6 +300,7 @@ while go
         end
         
         %pause(1)
+        %pause(0.5)
         pause(0.0333); % 0.0167 for 60 FPS, 0.0333 for 30 FPS
         %pause(0.0167);
     end

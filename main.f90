@@ -8,14 +8,15 @@ module constants
 
     !L and lambda are the lattice and cell dimensions, respectively; numIters is the number of Monte Carlo steps per frame.
     !beta is the reciprocal temperature; p0 is the concentration of zeroes at t = 0; p1 is the concentration of +1 (and -1 at the moment); phi is to volatility; cutoffConc is the final residual solvent concentration - set to negative number for infinite run-time.
-    !To boolean constSeed uses a constant seed for the RNG (for debugging); fastEvap uses the evapRand subroutine (which is unphysical garbage); FBC enables the free boundary conditions.
+    !To boolean constSeed uses a constant seed for the RNG (for debugging); FBC enables the free boundary conditions.
     !sigma is the spin matrix; numSpins is a tensor of rank 3 which stores the number of spins of each spices per cell.
-    integer,parameter :: L = 128, lambda = 4, numIters = 2**28
-    real,parameter :: beta = 0.6, p0 = 0.4, p1 = (1 - p0)/2, phi = 0, cutoffConc = 0.1
-    logical,parameter :: constSeed = .false., fastEvap = .false., FBC = .false.
+    integer,parameter :: L = 256, lambda = 4, numIters = 2**22
+!    real,parameter :: beta = 0.6, p0 = 0.6, p1 = (1 - p0)/2, phi = 0, cutoffConc = 0.1
+    real,parameter :: beta = 0.6, p0 = 0.6, p1 = 0.3, phi = 0, cutoffConc = 0.1
+    logical,parameter :: constSeed = .false., FBC = .true., debug = .false.
     integer :: sigma(L,L), numSpins(L/lambda,L/lambda,1:3)
 !    integer,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !The result is a 3 x 3 row matrix, i.e. the first three values correspond to the elements in the first row, etc.
-    integer,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 2, 1, 0, 1, 2, 1, 0], shape(J_str))) !The result is a 3 x 3 row matrix, i.e. the first three values correspond to the elements in the first row, etc.
+!    integer,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 2, 1, 0, 1, 2, 1, 0], shape(J_str))) !The result is a 3 x 3 row matrix, i.e. the first three values correspond to the elements in the first row, etc.
 
 !    real,dimension(3, 3) :: J_str = transpose(reshape(1.0*[0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !1
 !    real,dimension(3, 3) :: J_str = transpose(reshape(0.3*[0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !2
@@ -37,11 +38,12 @@ module constants
 !    real,dimension(3, 3) :: J_str = transpose(reshape((1.2936*lambda**(-2.7085)+0.0061-&
 !        0.003)*[0, 1, 2, 1, 0, 1, 2, 1, 0], shape(J_str))) !scaled
 
-!    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*[0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !1
+!    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*[0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !J_ORIGINAL SCALED
+!    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*[0, 1, 2, 1, 0, 1, 2, 1, 0], shape(J_str))) !2
 !    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*0.01* &
 !        [0, 80, 160, 80, 0, 80, 160, 80, 0], shape(J_str))) !Based on manual tests. Here be dragons.
-!    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*0.01* &
-!        [0, 75, 125, 75, 0, 75, 125, 75, 0], shape(J_str))) !These are the best values, IMO.
+    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*0.01* &
+        [0, 75, 125, 75, 0, 75, 125, 75, 0], shape(J_str))) !These are the best values, IMO.
  
 !    real,dimension(3, 3) :: J_str = transpose(reshape(0.01* &
 !        [0, 75, 125, 75, 0, 75, 125, 75, 0], shape(J_str))) !UNSCALED
@@ -517,7 +519,6 @@ contains
             !-Evaporation of top row--------------------------------------------
             if(i_c == 1 .and. spin == 0) then
                 call evap(i_s, j_s, i_c, j_c, sigma, numSpins)
-                if(fastEvap .eqv. .true.) call evapRand(i_s, j_s, i_c, j_c, sigma, numSpins) !This is the 'random evaporation' bollocks to avoid the streaks.
                 GO TO 10
             endif
 
@@ -567,8 +568,47 @@ contains
 
 end module dynamics
 
+!This module takes care of number to string conversion for creation of directories etc.
+module strings
+    use constants
+
+    ! GLOBAL FUNCTIONS
+    public :: num2str
+
+    ! Everything else is private
+    private
+
+    interface num2str
+      module procedure num2str_int
+      module procedure num2str_real
+    end interface 
+
+contains
+
+    function num2str_int(number)
+        implicit none
+        integer,intent(in) :: number
+        character(len=6)   :: num2str_int
+        character(len=6)   :: tmp
+
+        write(tmp,'(I6)')number
+        num2str_int = tmp
+    end function
+
+    function num2str_real(number)
+        implicit none
+        real,intent(in)    :: number
+        character(len=6)   :: num2str_real
+        character(len=6)   :: tmp
+        
+        write(tmp,'(F6.4)')number
+        num2str_real = tmp
+    end function
+end module
+
 !The main program controls the simulation in the sense that it initialises the system, writes .dat files, informs the user about approximate time remaining etc.
 program main
+    use strings
     use initialisation
     use functions
     use dynamics
@@ -578,21 +618,53 @@ program main
     !n, i and j are used in loops; stat is used to remove old frames.
     !file_id and file_name hold info for saving/erasing the frames.
     !start, finish, etc. are only used to keep track of the time and to provide some nice prompts to the user; conc is the current concentration of zeros; MCS is the current number of MCS (for prompt).
-    integer :: i, j, n, stat
-    character(32) :: file_id, file_name
-    logical :: file_exists = .true.
+    integer :: i, j, n, stat, nI
+    character(128) :: file_id, file_name, folderName
+    character :: d
+    logical :: file_exists = .true., folder_exists = .true.
     real :: start, finish, numHour, numMin, numSec, conc, MCS
 
-    !This clears the frames/ directory using magic.
-    n = 0
+    !The debugging mode simply uses /frames and deletes all of the files in there without warning!
+    !In non-debugging mode, this creates a directory with the correct name (if it does not currently exist).
+    if(debug .eqv. .true.) then
+        folderName = 'frames'
+        GO TO 70
+    else
+        nI = aint(log(real(numIters))/log(2.))
+        folderName = 'lambda_' // trim(adjustl(num2str(lambda))) // '-L_' // trim(adjustl(num2str(L))) // '-J_' // &
+            trim(adjustl(num2str(J_str(1,1)*lambda**2))) // '_' // trim(adjustl(num2str(J_str(1,2)*lambda**2))) // '_' // &
+            trim(adjustl(num2str(J_str(1,3)*lambda**2))) // '-numIters_2-' // trim(adjustl(num2str(nI)))
+        if(FBC .eqv. .true.) folderName = trim(folderName) // '-FBC'
+        if(FBC .eqv. .false.) folderName = trim(folderName) // '-PBC'
+        inquire(file = './' // trim(folderName), exist = folder_exists)
+        if(folder_exists .eqv. .true.) GO TO 70
+        call execute_command_line ('mkdir ' // folderName)
+    endif
+
+    !This clears the directory using magic.
+70  n = 0
     do while (file_exists .eqv. .true.)
         n = n + 1
         write(file_id, '(i0)') n
-        file_name = 'frames/frame-' // trim(adjustl(file_id)) // '.dat'
+        file_name = trim(adjustl(folderName)) // '/frame-' // trim(adjustl(file_id)) // '.dat'
         inquire(file = trim(file_name), exist = file_exists)
-        open(10, iostat=stat, file = trim(file_name), form = 'formatted', status = 'old')
+        if(debug .eqv. .false.) then
+            if(n == 1 .and. file_exists .eqv. .true.) then
+                print '(//)'; print *, 'The directroy ' // trim(folderName) // ' is not empty!'
+                print '(">Delete old files? (y/n)")'; read *, d
+                if(d == 'y') then
+                    print '(//,"Deleting files...")'
+                    GO TO 80
+                else
+                    print '(//,"Aborting!")'
+                    GO TO 90
+                endif
+            endif
+        endif
+80      open(10, iostat=stat, file = trim(file_name), form = 'formatted', status = 'old')
         if(stat == 0) close(10, status='delete')
     enddo
+    if(d == 'y') print '("Files deleted.")'
 
 !    !Debugging stuff - basically gives one the ability to continue an aborted simulation from a specified state (REMEMBER TO COMMENT OUT THE STUFF ABOVE - IT *WILL* REMOVE ALL OF THE FILES OTHERWISE! AND ALSO THE GENSPINS CALL BELOW).
 !    write(file_id, '(i0)') 470
@@ -609,12 +681,13 @@ program main
     numSpins = initialNum(L, lambda, sigma) !Determines the initial number of spins.
     conc = real(count(sigma == 0))/real(L**2) !Calculates the intial concentration.
 
+    print '(//,"Starting dynamics...")'
     call cpu_time(start) !Keeps track of the time.
     !This is the main loop; it writes the .dat files and calls the metropolis() subroutine to alter the spin matrix and it also informs the user about the number of frames, time remaining etc.
     n = 1
     do while (conc > cutoffConc)
         write(file_id, '(i0)') n
-        file_name = 'frames/frame-' // trim(adjustl(file_id)) // '.dat'
+        file_name = trim(adjustl(folderName)) // '/frame-' // trim(adjustl(file_id)) // '.dat'
         open(10, file = trim(file_name), form = 'formatted')
         do i = 1,L
             write(10,*) (sigma(i,j), j = 1,L)
@@ -648,4 +721,5 @@ program main
     print '(//,"Completed after: ", 12x,i2," hour(s), ",i2," minute(s) and ",i2," second(s).")'&
     ,int(numHour),int(floor(numMin)),int(floor(numSec))
 
+90 continue
 end program main
