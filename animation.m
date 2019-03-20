@@ -13,13 +13,14 @@ set(groot, 'defaultLegendInterpreter','latex');
 prefix = '';
 if isempty(prefix) == true
     directory = [prefix 'frames'];
+    %directory = [prefix 'lambda_4-L_512-J_0.0000_0.7500_1.2500-numIters_2-24-FBC'];
 else
-    directory = [prefix 's_lambda_4-L_256_frames_v3-c_1-J_squareScaled-numIters_2-24-FBC'];
+    directory = [prefix 's_lambda_8-L_512_frames_v3-c_1-J_squareScaled-numIters_2-24-FBC'];
 end
 lambda = 4;
-numIters = 2^24;
+numIters = 2^22;
 
-cellVisualisation = false;
+cellVisualisation = true;
 linInt = false; m = 1.5; %m controls the contrast. Decrease to 1.0 for maximum contrast. 1.5 is a decent value.
 gridOn = false; %will be disabled if linInt = true.
 

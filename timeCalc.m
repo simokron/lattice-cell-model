@@ -8,8 +8,8 @@ set(groot, 'defaultAxesTickLabelInterpreter','latex');
 set(groot, 'defaultTextInterpreter','latex');
 set(groot, 'defaultLegendInterpreter','latex');
 
-directory = ['frames' '/'];
-numIters = 2^22;
+directory = ['lambda_4-L_512-J_0.0000_0.7500_1.2500-numIters_2-24-FBC' '/'];
+numIters = 2^24;
 cutoffConc = 0.1;
 
 go = true; tempPause = true;
