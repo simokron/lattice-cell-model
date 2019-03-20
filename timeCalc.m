@@ -8,19 +8,38 @@ set(groot, 'defaultAxesTickLabelInterpreter','latex');
 set(groot, 'defaultTextInterpreter','latex');
 set(groot, 'defaultLegendInterpreter','latex');
 
-directory = ['lambda_4-L_512-J_0.0000_0.7500_1.2500-numIters_2-24-FBC' '/'];
-numIters = 2^24;
+%prefix = 'squareScaling/';
+%prefix = 'PBCvsFBC/';
+prefix = 'automatedRun/';
+%prefix = '';
+if isempty(prefix) == true
+    directory = [prefix 'frames'];
+    %directory = [prefix 'lambda_4-L_512-J_0.0000_0.7500_1.2500-numIters_2-24-FBC'];
+else
+    directory = [prefix 'lambda_8-L_512-J_0.0000_0.7500_1.2500-numIters_2-24-initialDist_60_20_20-FBC'];
+end
+
 cutoffConc = 0.1;
+fitType = 'exp1';
+
+ipos = strfind(directory,'lambda_') + strlength("lambda_");
+iposLim = strfind(directory,'-L_') - 1;
+lambda = str2num(directory(ipos:iposLim))
+
+ipos = strfind(directory,'numIters_2-') + strlength("numIters_2-");
+iposLim = strfind(directory,'-initialDist_') - 1;
+exponent = str2num(directory(ipos:iposLim))
+numIters = 2^exponent;
 
 go = true; tempPause = true;
 while go
-    a = dir([directory '*.dat']);
+    a = dir([directory '/*.dat']);
     T = struct2table(a);
     sortedT = sortrows(T, 'date');
     sortedA = table2struct(sortedT);
     b = numel(a);
     
-    frame = importdata([directory 'frame-' num2str(1) '.dat']);
+    frame = importdata([directory '/frame-' num2str(1) '.dat']);
     
     cT = datetime(getfield(sortedA(b),'date'))-datetime(getfield(sortedA(1),'date'));
     currentTime = seconds(cT);
@@ -28,8 +47,8 @@ while go
     clc;
     fprintf(['Number of frames:              ' num2str(b)])
     
-    for n = 1:b
-        frame = importdata([directory 'frame-' num2str(n) '.dat']);
+    for n = 1:1:b
+        frame = importdata([directory '/frame-' num2str(n) '.dat']);
         c0(n) = 1 - nnz(frame)/numel(frame);
         MCS(n) = numIters*(n-1)/(size(frame,1)*size(frame,2));
         if mod(n, 10) == 0 || n == 2
@@ -47,7 +66,7 @@ while go
     fprintf(['Number of frames:              ' num2str(b)])
     fprintf(['\nNumber of MCS:               ' num2str(MCS(end))])
     
-    f = fit(c0',MCS','exp1');
+    f = fit(c0',MCS',fitType);
     
     percCompActual = 100*(cutoffConc/c0(end));
     percComp = 100*MCS(end)/f(cutoffConc);

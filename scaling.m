@@ -8,10 +8,10 @@ set(groot, 'defaultAxesTickLabelInterpreter','latex');
 set(groot, 'defaultTextInterpreter','latex');
 set(groot, 'defaultLegendInterpreter','latex');
 
-x = [1, 2, 4, 8, 16, 32];
-y = [1.3, 0.2, 0.05, 0.01, 0.003, 0.001];
+x = 512./[4, 8, 16, 32, 64];
+y = [26 24 22 20 18];
 
-f=fit(x',y','power2')
+f=fit(x',y','power1')
 
 %f = fit(log(x)',log(y)','poly1');
 c = coeffvalues(f);
@@ -37,14 +37,14 @@ hold off
 %set(gca, 'XScale', 'log')
 
 % Cosmetic plot stuff.
-xlabel('$\lambda$')
+xlabel('$L/\lambda$')
 ylabel('Scaling factor')
 %title('Line profiles')
 legend('Data points','Fit','Location','northwest')
 box on
 
-xlim([min(x) - 0.2*min(x), max(x) + 0.3*max(x)]);
-ylim([0 2]);
+%xlim([min(x) - 0.2*min(x), max(x) + 0.3*max(x)]);
+%ylim([0 2]);
 %set(gca, 'YScale', 'log')
 %set(gca, 'XScale', 'log')
 %

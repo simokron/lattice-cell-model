@@ -10,15 +10,14 @@ set(groot, 'defaultLegendInterpreter','latex');
 
 %prefix = 'squareScaling/';
 %prefix = 'PBCvsFBC/';
-prefix = '';
+prefix = 'automatedRun/';
+%prefix = '';
 if isempty(prefix) == true
     directory = [prefix 'frames'];
     %directory = [prefix 'lambda_4-L_512-J_0.0000_0.7500_1.2500-numIters_2-24-FBC'];
 else
-    directory = [prefix 's_lambda_8-L_512_frames_v3-c_1-J_squareScaled-numIters_2-24-FBC'];
+    directory = [prefix 'lambda_8-L_512-J_0.0000_0.7500_1.2500-numIters_2-24-initialDist_60_20_20-FBC'];
 end
-lambda = 4;
-numIters = 2^22;
 
 cellVisualisation = true;
 linInt = false; m = 1.5; %m controls the contrast. Decrease to 1.0 for maximum contrast. 1.5 is a decent value.
@@ -49,6 +48,15 @@ current = 1.0; %relates to exporting - largest concentration to save (usually be
 
 a = dir([directory '/*.dat']);
 b = numel(a);
+
+ipos = strfind(directory,'lambda_') + strlength("lambda_");
+iposLim = strfind(directory,'-L_') - 1;
+lambda = str2num(directory(ipos:iposLim))
+
+ipos = strfind(directory,'numIters_2-') + strlength("numIters_2-");
+iposLim = strfind(directory,'-initialDist_') - 1;
+exponent = str2num(directory(ipos:iposLim))
+numIters = 2^exponent;
 
 if b == 0
     fprintf('Empty directory...\n')

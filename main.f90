@@ -10,11 +10,13 @@ module constants
     !beta is the reciprocal temperature; p0 is the concentration of zeroes at t = 0; p1 is the concentration of +1 (and -1 at the moment); phi is to volatility; cutoffConc is the final residual solvent concentration - set to negative number for infinite run-time.
     !To boolean constSeed uses a constant seed for the RNG (for debugging); FBC enables the free boundary conditions.
     !sigma is the spin matrix; numSpins is a tensor of rank 3 which stores the number of spins of each spices per cell.
-    integer,parameter :: L = 256, lambda = 4, numIters = 2**22
-!    real,parameter :: beta = 0.6, p0 = 0.6, p1 = (1 - p0)/2, phi = 0, cutoffConc = 0.1
-    real,parameter :: beta = 0.6, p0 = 0.6, p1 = 0.2, phi = 0, cutoffConc = 0.1
-    logical,parameter :: constSeed = .false., FBC = .true., debug = .true.
+    integer,parameter :: L = 512, lambda = 8!, numIters = 2**22
+    character(128) :: prefix = 'automatedRun/'
+    real,parameter :: beta = 0.6, p0 = 0.6, p1 = (1 - p0)/2, phi = 0, cutoffConc = 0.1
+!    real,parameter :: beta = 0.6, p0 = 0.6, p1 = 0.1, phi = 0, cutoffConc = 0.1
+    logical,parameter :: constSeed = .false., FBC = .true., debug = .false.
     integer :: sigma(L,L), numSpins(L/lambda,L/lambda,1:3)
+    integer, allocatable :: numIters
 !    integer,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !The result is a 3 x 3 row matrix, i.e. the first three values correspond to the elements in the first row, etc.
 !    integer,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 2, 1, 0, 1, 2, 1, 0], shape(J_str))) !The result is a 3 x 3 row matrix, i.e. the first three values correspond to the elements in the first row, etc.
 
@@ -42,10 +44,10 @@ module constants
 !    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*[0, 1, 2, 1, 0, 1, 2, 1, 0], shape(J_str))) !2
 !    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*0.01* &
 !        [0, 80, 160, 80, 0, 80, 160, 80, 0], shape(J_str))) !Based on manual tests. Here be dragons.
-!    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*0.01* &
-!        [0, 75, 125, 75, 0, 75, 125, 75, 0], shape(J_str))) !These are the best values, IMO.
     real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*0.01* &
-        [0, 75, 0, 75, 0, 75, 0, 75, 0], shape(J_str))) !These are the best values, IMO.
+        [0, 75, 125, 75, 0, 75, 125, 75, 0], shape(J_str))) !These are the best values, IMO.
+!    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*0.01* &
+!        [0, 75, 0, 75, 0, 75, 0, 75, 0], shape(J_str))) !+1 and -1 are functionally the same!
  
 !    real,dimension(3, 3) :: J_str = transpose(reshape(0.01* &
 !        [0, 75, 125, 75, 0, 75, 125, 75, 0], shape(J_str))) !UNSCALED
@@ -622,9 +624,11 @@ program main
     !start, finish, etc. are only used to keep track of the time and to provide some nice prompts to the user; conc is the current concentration of zeros; MCS is the current number of MCS (for prompt).
     integer :: i, j, n, stat, nI
     character(128) :: file_id, file_name, folderName
-    character :: d
+    character :: d 
     logical :: file_exists = .true., folder_exists = .true.
     real :: start, finish, numHour, numMin, numSec, conc, MCS
+
+    numIters = 2**(nint(13.8647*(L/lambda)**(0.1309)))
 
     !The debugging mode simply uses /frames and deletes all of the files in there without warning!
     !In non-debugging mode, this creates a directory with the correct name (if it does not currently exist).
@@ -632,15 +636,19 @@ program main
         folderName = 'frames'
         GO TO 70
     else
-        nI = aint(log(real(numIters))/log(2.))
+        nI = nint(log(real(numIters))/log(2.))
         folderName = 'lambda_' // trim(adjustl(num2str(lambda))) // '-L_' // trim(adjustl(num2str(L))) // '-J_' // &
             trim(adjustl(num2str(J_str(1,1)*lambda**2))) // '_' // trim(adjustl(num2str(J_str(1,2)*lambda**2))) // '_' // &
-            trim(adjustl(num2str(J_str(1,3)*lambda**2))) // '-numIters_2-' // trim(adjustl(num2str(nI)))
+            trim(adjustl(num2str(J_str(1,3)*lambda**2))) // '-numIters_2-' // trim(adjustl(num2str(nI))) // '-initialDist_' // &
+            trim(adjustl(num2str(nint(p0*100.)))) // '_' // trim(adjustl(num2str(nint(p1*100)))) // '_' // & 
+            trim(adjustl(num2str(nint((1 - p0 - p1)*100))))
         if(FBC .eqv. .true.) folderName = trim(folderName) // '-FBC'
         if(FBC .eqv. .false.) folderName = trim(folderName) // '-PBC'
+        folderName = trim(prefix) // trim(folderName)
         inquire(file = './' // trim(folderName), exist = folder_exists)
         if(folder_exists .eqv. .true.) GO TO 70
         print '(//,"Creating directory...")'
+        call execute_command_line ('mkdir ' // prefix)
         call execute_command_line ('mkdir ' // folderName)
     endif
 
