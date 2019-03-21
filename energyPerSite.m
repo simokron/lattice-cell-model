@@ -56,13 +56,16 @@ xticklabels(split(num2str(log2(unique([sort(x)])))))
 yticks([0:0.2:100])
 %yticklabels({'0.4','0.6','0.8','1.0','1.2','1.4','1.6','1.8'})
 
-set(gcf,'Units','pixels');
-set(gcf,'Position', [0 0 550 400])
-%set(gca,'Position', [0 0 1 1])
-%pbaspect([1.5 1 1])
-tightfig;
-
-if export == true
+if export ~= true
+    set(gcf,'Units','pixels');
+    set(gcf,'Position', [0 0 550 400]*1.5)
+    set(gcf,'color','w');
+    tightfig;
+else
+    set(gcf,'Units','pixels');
+    set(gcf,'Position', [0 0 550 400])
+    set(gcf,'color','w');
+    tightfig;
     fig = gcf;
     filename = 'energyPerSite';
     

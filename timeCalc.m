@@ -16,11 +16,11 @@ if isempty(prefix) == true
     directory = [prefix 'frames'];
     %directory = [prefix 'lambda_4-L_512-J_0.0000_0.7500_1.2500-numIters_2-24-FBC'];
 else
-    directory = [prefix 'lambda_8-L_512-J_0.0000_0.7500_1.2500-numIters_2-24-initialDist_60_20_20-FBC'];
+    directory = [prefix 'lambda_2-L_512-J_0.0000_0.7500_1.2500-numIters_2-29-initialDist_60_20_20-FBC'];
 end
 
 cutoffConc = 0.1;
-fitType = 'exp1';
+fitType = 'exp2';
 
 ipos = strfind(directory,'lambda_') + strlength("lambda_");
 iposLim = strfind(directory,'-L_') - 1;
@@ -120,7 +120,12 @@ while go
     % ylp = get(ylh, 'Position');
     % set(ylh, 'Rotation',0, 'Position',ylp, 'VerticalAlignment','middle', 'HorizontalAlignment','right');
     %tightfig;
-    set(gcf,'Position', [0 0 650 600])
+    set(gcf,'Units','pixels');
+    set(gcf,'Position', [0 0 550 400]*1.5)
+    set(gcf,'color','w');
+    %set(gca,'Position', [0 0 1 1])
+    %pbaspect([1.5 1 1])
+    tightfig;
     
     numPause = 0;
     while tempPause

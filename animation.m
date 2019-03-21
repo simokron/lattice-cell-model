@@ -16,11 +16,11 @@ if isempty(prefix) == true
     directory = [prefix 'frames'];
     %directory = [prefix 'lambda_4-L_512-J_0.0000_0.7500_1.2500-numIters_2-24-FBC'];
 else
-    directory = [prefix 'lambda_8-L_512-J_0.0000_0.7500_1.2500-numIters_2-24-initialDist_60_20_20-FBC'];
+    directory = [prefix 'lambda_2-L_512-J_0.0000_0.7500_1.2500-numIters_2-29-initialDist_60_20_20-FBC'];
 end
 
 cellVisualisation = true;
-linInt = false; m = 1.5; %m controls the contrast. Decrease to 1.0 for maximum contrast. 1.5 is a decent value.
+linInt = false; m = 1.0; %m controls the contrast. Decrease to 1.0 for maximum contrast. 1.5 is a decent value.
 gridOn = false; %will be disabled if linInt = true.
 
 FourierTransform = false; %disables gridOn an shows the fft image.
@@ -32,7 +32,7 @@ gcaOnly = false;
 exportGIF = false;
 pauseTime = 0.1; %The time between each frame in the GIF.
 
-sequence = true; %true for whole sequence (always true for exports).
+sequence = false; %true for whole sequence (always true for exports).
 once = false; %false for currently running simulations.
 
 if exportGIF == true
@@ -71,7 +71,7 @@ sortedA = table2struct(sortedT);
 cT = datetime - datetime(getfield(sortedA(b),'date'));
 timeSinceLF = seconds(cT);
 
-if timeSinceLF > 60*5
+if timeSinceLF > 60*15
     once = true;
 end
 
@@ -89,7 +89,9 @@ while go
     clc;
     fprintf(['numFrames = ' num2str(b) '\n'])
     if exportGIF == true
-        fprintf('Exporting frames as GIF...\n')
+        fprintf('Exporting frames as gif...\n')
+    elseif export == true
+        fprintf(['Exporting frames as ' F '...\n'])
     end
     
     if sequence == true || export == true || exportGIF == true
@@ -332,7 +334,7 @@ while go
             break;
         end
         numPause = numPause + 1;
-        if numPause > 60
+        if numPause > 180
             go = false;
             break;
         end
