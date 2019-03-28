@@ -8,27 +8,28 @@ set(groot, 'defaultAxesTickLabelInterpreter','latex');
 set(groot, 'defaultTextInterpreter','latex');
 set(groot, 'defaultLegendInterpreter','latex');
 
-%prefix = 'squareScaling/';
-%prefix = 'PBCvsFBC/';
-prefix = 'automatedRun/';
 %prefix = '';
-if isempty(prefix) == true
-    %directory = [prefix 'frames'];
-    directory = [prefix 'lambda_4-L_512-J_0.0000_0.7500_1.2500-numIters_2-24-initialDist_60_30_10-FBC'];
-else
-    directory = [prefix 'lambda_2-L_512-J_0.0000_0.7500_1.2500-numIters_2-29-initialDist_60_20_20-FBC'];
-end
+prefix = 'automatedRun/512/';
+%prefix = 'debug/';
+%prefix = 'PBCvsFBC/';
+%prefix = 'solventDistribution/';
+
+folder = 'lambda_2-L_512-J_0.0000_1.0000_2.0000-numIters_2-29-initialDist_60_20_20-FBC';
+
+directory = [prefix folder];
 
 skipFrames = 1;
-evapFront = 0.25;
+evapFront = 0.30;
 polDeg = 15;
 lateralView = false;
+timeDep = false; %Shows the time dependence after completion (and exports if export = true).
+logLog = true;
 
-F = 'pdf'; %pdf or png!
-export = true; %Turns on the frame export! For GIF exporting, use exporGIF below. DO NOT USE BOTH!
+F = 'png'; %pdf or png!
+export = false; %Turns on the frame export! For GIF exporting, use exporGIF below. DO NOT USE BOTH!
+fontSize = 14; % 14 for 0.5\linewidth; 21 for 0.33\linewidth (for 1:1 scale - try 18 if it's too large)
 exportGIF = false;
 pauseTime = 0.2; %The time between each frame in the GIF.
-timeDep = false; %Shows the time dependence after completion (and exports if export = true).
 
 if exportGIF == true
     fprintf('Exporting frames as gif...\n')
@@ -128,12 +129,12 @@ for n = 1:skipFrames:b
     % Plotting
     %figure
     h1 = axes;
-    set(gca,'FontSize',12)
+    set(gca,'FontSize',fontSize)
     hold on
     if timeDep == false
-        %plot(X,c2,'ok', 'MarkerSize',5)
+        plot(X,c2,'ok', 'MarkerSize',5)
         plot(X,c0,'.r', 'MarkerSize',20)
-        %plot(X,c1,'.k', 'MarkerSize',20)
+        plot(X,c1,'.k', 'MarkerSize',20)
     else
         plot(X,c0,'.r', 'MarkerSize',20)
     end
@@ -152,19 +153,19 @@ for n = 1:skipFrames:b
     
     % Cosmetic plot stuff.
     if lateralView == false
-        xlabel('$i$')
-    else
         xlabel('$j$')
+    else
+        xlabel('$i$')
     end
-    if export ~= true
+    if export ~= true || sum(F == 'png') == 3
         title(['Concentration of zeros = ' num2str(round(sum(c0)/size(c0,2),2)) '; MCS = ' num2str(round(MCSTemp,0))])
     end
     if timeDep == false
-        %ylabel('Concentrations')
-        ylabel('Solvent concentration')
-        %legend('$c_{-1}$','$c_{0}$','$c_{+1}$','Location','northwest')
+        ylabel('Concentration')
+        %legend('$c_{0}$','Location','northwest')
+        legend('$c_{-1}$','$c_{0}$','$c_{+1}$','Location','northwest')
     else
-        ylabel('Solvent concentration')
+        ylabel('Concentration')
         legend('$c_{0}$','Polynomial fit','Location','northwest')
     end
     box on
@@ -174,6 +175,7 @@ for n = 1:skipFrames:b
     %ylim([0 1.0-kLim*n]);
     ylim([0 1.0]);
     xticks([0:size(c0,2)/8:size(c0,2)])
+    yticks([0:1/5:1.0])
     
     % yticks([0, 23, 143])
     %yticklabels({'0.4','0.6','0.8','1.0','1.2','1.4','1.6','1.8'})
@@ -185,8 +187,8 @@ for n = 1:skipFrames:b
     %     set(ylh, 'Rotation',0, 'Position',ylp, 'VerticalAlignment','middle', 'HorizontalAlignment','right');
     %tightfig;
     
-    set(gca,'FontSize',14)
-    if export ~= true
+    set(gca,'FontSize',fontSize)
+    if export ~= true || sum(F == 'png') == 3
         set(gcf,'Units','pixels');
         set(gcf,'Position', [0 0 550 400]*1.5)
         set(gcf,'color','w');
@@ -205,7 +207,11 @@ for n = 1:skipFrames:b
             if round(sum(c0)/size(c0,2),2) == k/10 && k/10 < current
                 current = k/10;
                 fig = gcf;
-                filename = sprintf([directory '_MCS_' num2str(round(MCSTemp,0)) '_c0_0%d-solventDistribution.' F],str2num(strrep(num2str(round(sum(c0)/size(c0,2),2)),'.','')));
+                if timeDep == true
+                    filename = sprintf([directory '_MCS_' num2str(round(MCSTemp,0)) '_c0_0%d-solventDistribution-timeDep.' F],str2num(strrep(num2str(round(sum(c0)/size(c0,2),2)),'.','')));
+                else
+                    filename = sprintf([directory '_MCS_' num2str(round(MCSTemp,0)) '_c0_0%d-solventDistribution.' F],str2num(strrep(num2str(round(sum(c0)/size(c0,2),2)),'.','')));
+                end
                 if sum(F == 'png') == 3
                     frame = getframe(fig);
                     im = frame2im(frame);
@@ -221,7 +227,11 @@ for n = 1:skipFrames:b
         end
     elseif exportGIF == true
         h = gcf;
-        filename = [directory '-solventDistribution.gif'];
+        if timeDep == true
+            filename = [directory '-solventDistribution-timeDep.gif'];
+        else
+            filename = [directory '-solventDistribution.gif'];
+        end
         frame = getframe(h);
         im = frame2im(frame);
         [imind,cm] = rgb2ind(im,256);
@@ -243,45 +253,99 @@ end
 
 %%
 if timeDep == true && lateralView == false
+    cutoff = 15;
+    
     frame = importdata([directory '/frame-' num2str(n-skipFrames) '.dat']);
     MCS = MCS(MCS~=0); x0 = x0(x0~=0); %Remove zeros.
     X = 0:0.1:MCS(end);
-    fun = fit(MCS',x0','power1'); coeffs = coeffvalues(fun);
     
-    clf;
-    % Plotting
-    %figure
-    h1 = axes;
-    set(gca,'FontSize',12)
-    hold on
-    plot(MCS,x0,'.k', 'MarkerSize',20)
-    ws = warning('off','all');  % Turn off warnings.
-    plot(X,fun(X),'-m')
-    warning(ws)  % Turn them back on.
-    hold off
-    
-    s2 = ['Power law fit: $y = ' num2str(round(coeffs(1),2)) '\cdot x^{' num2str(round(coeffs(2),2)) '}$'];
-    % Cosmetic plot stuff.
-    xlabel('MCS')
-    ylabel('$i_{\textnormal{evap}}$')
-    %title(['Concentration of zeros = ' num2str(round(sum(c0)/size(c0,2),2))])
-    legend('Data points',s2,'Location','northwest')
-    %legend('Data points','Exponential fit','Linear fit','Location','northwest')
-    box on
-    grid on
-    
-    xlim([0, max(MCS)]);
-    ylim([1, size(frame,1)/lambda]);
-    yticks([0:size(c0,2)/8:size(c0,2)])
-    % yticks([0, 23, 143])
-    %yticklabels({'0.4','0.6','0.8','1.0','1.2','1.4','1.6','1.8'})
-    
-    %     %Rotate ylabel, taking into account its size/centre relation.
-    %     ylh = get(gca,'ylabel');
-    %     gyl = get(ylh);
-    %     ylp = get(ylh, 'Position');
-    %     set(ylh, 'Rotation',0, 'Position',ylp, 'VerticalAlignment','middle', 'HorizontalAlignment','right');
-    %tightfig;
+    if logLog == false
+        fun = fit(MCS',x0','power1'); coeffs = coeffvalues(fun);
+        
+        clf;
+        % Plotting
+        %figure
+        h1 = axes;
+        set(gca,'FontSize',fontSize)
+        hold on
+        plot(MCS,x0,'.k', 'MarkerSize',20)
+        ws = warning('off','all');  % Turn off warnings.
+        plot(X,fun(X),'-m')
+        warning(ws)  % Turn them back on.
+        hold off
+        
+        % Cosmetic plot stuff.
+        sf = ['Power law fit: $y = ' num2str(round(coeffs(1),2)) '\cdot x^{' num2str(round(coeffs(2),2)) '}$'];
+        
+        xlabel('MCS')
+        ylabel('$j_{\textnormal{demix}}$')
+        %title(['Concentration of zeros = ' num2str(round(sum(c0)/size(c0,2),2))])
+        legend('Data points',sf,'Location','southeast')
+        %legend('Data points','Exponential fit','Linear fit','Location','northwest')
+        box on
+        grid on
+        
+        xlim([0, max(MCS)]);
+        ylim([1, size(frame,1)/lambda]);
+        yticks([0:size(c0,2)/4:size(c0,2)])
+        xticks([0:max(MCS)/4:max(MCS)])
+    else
+        lMCS = log(MCS');
+        lx0 = log(x0');
+        fun = fit(lMCS(1:end-cutoff),lx0(1:end-cutoff),'poly1'); coeffs = coeffvalues(fun);
+        if cutoff > 0
+            fun2 = fit(lMCS(end-cutoff+1:end),lx0(end-cutoff+1:end),'poly1'); coeffs2 = coeffvalues(fun2);
+            X2 = [min(lMCS(end-cutoff:end)):0.01:max(lMCS(end-cutoff:end))]';
+        end
+        X = [min(lMCS(1:end-cutoff)):0.01:max(lMCS(1:end-cutoff))]';
+        X = [min(lMCS):0.01:max(lMCS)]';
+        
+        clf;
+        % Plotting
+        %figure
+        h1 = axes;
+        set(gca,'FontSize',fontSize)
+        hold on
+        if cutoff > 0
+            plot(lMCS(1:end-cutoff),lx0(1:end-cutoff),'.k', 'MarkerSize',20)
+            plot(lMCS(end-cutoff:end),lx0(end-cutoff:end),'.', 'MarkerSize',20, 'Color', [0 0 0] + 0.70)
+        else
+            plot(lMCS,lx0,'.k', 'MarkerSize',20)
+        end
+        ws = warning('off','all');  % Turn off warnings.
+        plot(X,fun(X),'-m')
+        if cutoff > 0
+            plot(X2,fun2(X2),'-b')
+        end
+        warning(ws)  % Turn them back on.
+        hold off
+        
+        % Cosmetic plot stuff.
+        sf = ['Fit: $y = ' num2str(round(exp(coeffs(2)),2)) '\cdot x^{' num2str(round(coeffs(1),2)) '}$'];
+        
+        if cutoff > 0
+           sf2 = ['Fit: $y = ' num2str(round(exp(coeffs2(2)),2)) '\cdot x^{' num2str(round(coeffs2(1),2)) '}$']; 
+        end
+        
+        xlabel('MCS $[\ln]$')
+        ylabel('$j_{\textnormal{demix}}$ $[\ln]$')
+        %title(['Concentration of zeros = ' num2str(round(sum(c0)/size(c0,2),2))])
+        if cutoff > 0
+            legend('Data points','Excluded data points', sf, sf2, 'Location','northwest')
+        else
+            legend('Data points',sf,'Location','northwest')
+        end
+        %legend('Data points','Exponential fit','Linear fit','Location','northwest')
+        box on
+        grid on
+        
+        xlim([min(lMCS), max(lMCS)]);
+        ylim([min(lx0), max(lx0)]);
+        yticks([min(lMCS):(max(lMCS)-min(lMCS))/4:max(lMCS)])
+        xticks([min(lx0):(max(lx0)-min(lx0))/4:max(lx0)])
+        yticklabels({})
+        xticklabels({})
+    end
     
     if export ~= true
         set(gcf,'Units','pixels');
@@ -295,7 +359,7 @@ if timeDep == true && lateralView == false
         tightfig;
         
         fig = gcf;
-        filename = sprintf([directory 'timeDependence.' F]);
+        filename = sprintf([directory '-timeDep.' F]);
         if sum(F == 'png') == 3
             frame = getframe(fig);
             im = frame2im(frame);

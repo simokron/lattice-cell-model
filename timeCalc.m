@@ -8,16 +8,15 @@ set(groot, 'defaultAxesTickLabelInterpreter','latex');
 set(groot, 'defaultTextInterpreter','latex');
 set(groot, 'defaultLegendInterpreter','latex');
 
-%prefix = 'squareScaling/';
-%prefix = 'PBCvsFBC/';
-prefix = 'automatedRun/';
 %prefix = '';
-if isempty(prefix) == true
-    directory = [prefix 'frames'];
-    %directory = [prefix 'lambda_4-L_512-J_0.0000_0.7500_1.2500-numIters_2-24-FBC'];
-else
-    directory = [prefix 'lambda_2-L_512-J_0.0000_0.7500_1.2500-numIters_2-29-initialDist_60_20_20-FBC'];
-end
+prefix = 'automatedRun/512/';
+%prefix = 'debug/';
+%prefix = 'PBCvsFBC/';
+%prefix = 'solventDistribution/';
+
+folder = 'lambda_2-L_512-J_0.0000_1.0000_2.0000-numIters_2-29-initialDist_60_20_20-FBC';
+
+directory = [prefix folder];
 
 cutoffConc = 0.1;
 fitType = 'exp2';

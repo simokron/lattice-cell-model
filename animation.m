@@ -8,19 +8,18 @@ set(groot, 'defaultAxesTickLabelInterpreter','latex');
 set(groot, 'defaultTextInterpreter','latex');
 set(groot, 'defaultLegendInterpreter','latex');
 
-%prefix = 'squareScaling/';
-%prefix = 'PBCvsFBC/';
-prefix = 'automatedRun/';
 %prefix = '';
-if isempty(prefix) == true
-    directory = [prefix 'frames'];
-    %directory = [prefix 'lambda_4-L_512-J_0.0000_0.7500_1.2500-numIters_2-24-FBC'];
-else
-    directory = [prefix 'lambda_2-L_512-J_0.0000_0.7500_1.2500-numIters_2-29-initialDist_60_20_20-FBC'];
-end
+prefix = 'automatedRun/512/';
+%prefix = 'debug/';
+%prefix = 'PBCvsFBC/';
+%prefix = 'solventDistribution/';
+
+folder = 'lambda_2-L_512-J_0.0000_1.0000_2.0000-numIters_2-29-initialDist_60_20_20-FBC';
+
+directory = [prefix folder];
 
 cellVisualisation = true;
-linInt = false; m = 1.0; %m controls the contrast. Decrease to 1.0 for maximum contrast. 1.5 is a decent value.
+linInt = false; m = 1.5; %m controls the contrast. Decrease to 1.0 for maximum contrast. 1.5 is a decent value. 3.5 is good for the disks in the topView.
 gridOn = false; %will be disabled if linInt = true.
 
 FourierTransform = false; %disables gridOn an shows the fft image.
@@ -30,7 +29,7 @@ f = 'pdf'; %pdf or png!
 export = false; %Turns on the frame export! For GIF exporting, use exporGIF below. DO NOT USE BOTH!
 gcaOnly = false;
 exportGIF = false;
-pauseTime = 0.1; %The time between each frame in the GIF.
+pauseTime = 0.2; %The time between each frame in the GIF.
 
 sequence = false; %true for whole sequence (always true for exports).
 once = false; %false for currently running simulations.
@@ -51,11 +50,11 @@ b = numel(a);
 
 ipos = strfind(directory,'lambda_') + strlength("lambda_");
 iposLim = strfind(directory,'-L_') - 1;
-lambda = str2num(directory(ipos:iposLim))
+lambda = str2num(directory(ipos:iposLim));
 
 ipos = strfind(directory,'numIters_2-') + strlength("numIters_2-");
 iposLim = strfind(directory,'-initialDist_') - 1;
-exponent = str2num(directory(ipos:iposLim))
+exponent = str2num(directory(ipos:iposLim));
 numIters = 2^exponent;
 
 if b == 0
@@ -91,7 +90,7 @@ while go
     if exportGIF == true
         fprintf('Exporting frames as gif...\n')
     elseif export == true
-        fprintf(['Exporting frames as ' F '...\n'])
+        fprintf(['Exporting frames as ' f '...\n'])
     end
     
     if sequence == true || export == true || exportGIF == true
@@ -129,8 +128,10 @@ while go
             cDiff = cDown_cell - cUp_cell; %White <---> more down!
             
             map = gray(4096);
-            minv = min(cZero_cell(:));
-            maxv = max(cZero_cell(:));
+%             minv = min(cZero_cell(:))
+%             maxv = max(cZero_cell(:))
+            minv = 0;
+            maxv = 1;
             ncol = size(map,1);
             s = round(1+(ncol-1)*(cZero_cell-minv)/(maxv-minv));
             
@@ -143,8 +144,10 @@ while go
             rgb_image = ind2rgb(s,mymap);
             
             map = gray(4096);
-            minv = min(cDiff(:));
-            maxv = max(cDiff(:));
+%             minv = min(cDiff(:))
+%             maxv = max(cDiff(:))
+            minv = -1;
+            maxv = 1;
             ncol = size(map,1);
             s = round(1+(ncol-1)*(cDiff-minv)/(maxv-minv));
             
@@ -222,6 +225,7 @@ while go
                     gridOn = false;
                 else
                     imagesc(im);
+                    %imagesc(imfuse(old, rgb_image,'blend')); %DEBUGGING
                     %imagesc(rgb_image); %DEBUGGING
                     sF = 1;
                 end
@@ -312,8 +316,10 @@ while go
         
         %pause(1)
         %pause(0.5)
-        pause(0.0333); % 0.0167 for 60 FPS, 0.0333 for 30 FPS
+        pause(0.1)
+        %pause(0.0333); % 0.0167 for 60 FPS, 0.0333 for 30 FPS
         %pause(0.0167);
+        %sum(frame(:))/(size(frame,1)^2)
     end
     sequence = false;
     

@@ -8,10 +8,20 @@ set(groot, 'defaultAxesTickLabelInterpreter','latex');
 set(groot, 'defaultTextInterpreter','latex');
 set(groot, 'defaultLegendInterpreter','latex');
 
-x = 512./[4, 8, 16, 32, 64];
-y = [26 24 22 20 18];
+% x = 1024./[2 4 8 16 32 64];
+% y = [29 26 24 22 20 18]+5;
 
-f=fit(x',y','power1')
+%x = 512./[2 4 8 16 32 64];
+%y = [29 26 24 22 20 18];
+
+% x = 256./[2 4 8 16 32 64];
+% y = [29 26 24 22 20 18]-4;
+
+x = 128./[2 4 8 16 32 64];
+y = [29 26 24 22 20 18]-7;
+
+f=fit(x',y','power1');
+coeffvalues(f)
 
 %f = fit(log(x)',log(y)','poly1');
 c = coeffvalues(f);
