@@ -10,19 +10,22 @@ module constants
     !beta is the reciprocal temperature; p0 is the concentration of zeroes at t = 0; p1 is the concentration of +1 (and -1 at the moment); phi is to volatility; cutoffConc is the final residual solvent concentration - set to negative number for infinite run-time.
     !To boolean constSeed uses a constant seed for the RNG (for debugging); FBC enables the free boundary conditions.
     !sigma is the spin matrix; numSpins is a tensor of rank 3 which stores the number of spins of each spices per cell.
-    integer,parameter :: L = 512, lambda = 2
-    character(128) :: prefix = 'automatedRun/512/'
+    integer,parameter :: L = 512, lambda = 4
+!    character(128) :: prefix = 'automatedRun/256/'
 !    character(128) :: prefix = 'debug/'
+!    character(128) :: prefix = 'J_str/'
 !    character(128) :: prefix = 'PBCvsFBC/'
 !    character(128) :: prefix = 'solventDistribution/'
-    real,parameter :: beta = 0.6, p0 = 0.6, p1 = (1 - p0)/2, phi = 0.0, cutoffConc = 0.1
-!    real,parameter :: beta = 0.6, p0 = 0.6, p1 = 0.35, phi = 0.0, cutoffConc = 0.01
-    logical,parameter :: constSeed = .false., FBC = .true., topView = .false.
+    character(128) :: prefix = 'topView/'
+!    real,parameter :: beta = 0.6, p0 = 0.6, p1 = (1 - p0)/2, phi = 0.0, cutoffConc = 0.1
+    real,parameter :: beta = 0.6, p0 = 0.6, p1 = 0.35, phi = 0.0, cutoffConc = 0.1
+    logical,parameter :: constSeed = .false., FBC = .true., topView = .true.
     integer :: sigma(L,L), numSpins(L/lambda,L/lambda,1:3)
     integer, allocatable :: numIters
 
 !    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*[0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !J_ORIGINAL SCALED
     real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*[0, 1, 2, 1, 0, 1, 2, 1, 0], shape(J_str))) !2
+!    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*[0, 1, 3, 1, 0, 1, 3, 1, 0], shape(J_str))) !3
 
 !    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*[0, 1, 0, 1, 0, 1, 0, 1, 0], shape(J_str))) !+1 and -1 are functionally the same.
 
@@ -715,7 +718,7 @@ program main
     !start, finish, etc. are only used to keep track of the time and to provide some nice prompts to the user; conc is the current concentration of zeros; MCS is the current number of MCS (for prompt).
     integer :: j, i, n, stat, nI
     character(128) :: file_id, file_name, folderName
-    character :: d 
+    character :: d, d2
     logical :: file_exists = .true., folder_exists = .true.
     real :: start, finish, numHour, numMin, numSec, conc, MCS
     INTEGER (KIND=2) :: expon
@@ -727,7 +730,7 @@ program main
     elseif(L == 256) then
         expon = nint(11.3520*(L/lambda)**(0.1621))
     elseif(L == 128) then
-        expon = nint(9.8890*(L/lambda)**(0.1921))
+        expon = nint(7.1576*(L/lambda)**(0.2355))
     else
         print '("Please fit numIters data. Using L = 512 values...",/,"Press ENTER to continue.")'
         read(stdin,*)
@@ -774,8 +777,13 @@ program main
                 print '(//,"Deleting files...")'
                 GO TO 80
             else
-                print '(//,"Aborting!")'
-                GO TO 90
+                print '(//,"Continue simulation from last frame? (y/n)")'; read *, d2
+                if(d2 == 'y') then
+                    EXIT
+                else
+                    print '(//,"Aborting!")'
+                    GO TO 90
+                endif
             endif
         endif
 80      open(10, iostat=stat, file = trim(file_name), form = 'formatted', status = 'old')
@@ -783,25 +791,42 @@ program main
     enddo
     if(d == 'y') print '("Files deleted.")'
 
-!    !Debugging stuff - basically gives one the ability to continue an aborted simulation from a specified state (REMEMBER TO COMMENT OUT THE STUFF ABOVE - IT *WILL* REMOVE ALL OF THE FILES OTHERWISE! AND ALSO THE GENSPINS CALL BELOW).
-!    write(file_id, '(i0)') 470
-!    file_name = 'frames/frame-' // trim(adjustl(file_id)) // '.dat'
-!    open(10, file = trim(file_name), form = 'formatted')
-!    do i = 1,L
-!        read(10,*) (sigma(i,j), j = 1,L)
-!    enddo
-!    close(10)
+    !This starts the simulation from the last frame in the directory.
+    if(d2 == 'y') then
+        !First we find the correct 'n' for the latest frame.
+        n = 0
+        do while (file_exists .eqv. .true.)
+            n = n + 1
+            write(file_id, '(i0)') n
+            file_name = trim(adjustl(folderName)) // '/frame-' // trim(adjustl(file_id)) // '.dat'
+            inquire(file = trim(file_name), exist = file_exists)
+        enddo
+
+        !Then we read the frame into memory.
+        n = n-1
+        write(file_id, '(i0)') n
+        file_name = trim(adjustl(folderName)) // '/frame-' // trim(adjustl(file_id)) // '.dat'
+        open(10, file = trim(file_name), form = 'formatted')
+        do j = 1,L
+            read(10,*) (sigma(j,i), i = 1,L)
+        enddo
+        close(10)
+
+        !Then we setup the RNG and start the dynamics.
+        call setupRNG()
+        GO TO 85
+    endif
 
     call setupRNG() !Sets up the RNG (either with a constant seed or using UNIX time for m-m-m-aximum pseudo-randomness!).
     call genSpins(L, sigma, p0, p1) !Generates a pseudo-random L x L "tenary spin matrix".
 
-    numSpins = initialNum(L, lambda, sigma) !Determines the initial number of spins.
+85  numSpins = initialNum(L, lambda, sigma) !Determines the initial number of spins.
     conc = real(count(sigma == 0))/real(L**2) !Calculates the intial concentration.
 
     print '(//,"Starting dynamics...")'
     call cpu_time(start) !Keeps track of the time.
     !This is the main loop; it writes the .dat files and calls the metropolis() subroutine to alter the spin matrix and it also informs the user about the number of frames, time remaining etc.
-    n = 1
+    if(d2 /= 'y') n = 1
     do while (conc > cutoffConc)
         write(file_id, '(i0)') n
         file_name = trim(adjustl(folderName)) // '/frame-' // trim(adjustl(file_id)) // '.dat'

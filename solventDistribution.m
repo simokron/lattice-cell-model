@@ -9,12 +9,14 @@ set(groot, 'defaultTextInterpreter','latex');
 set(groot, 'defaultLegendInterpreter','latex');
 
 %prefix = '';
-prefix = 'automatedRun/512/';
+prefix = 'automatedRun/256/';
 %prefix = 'debug/';
+%prefix = 'J_str/';
 %prefix = 'PBCvsFBC/';
 %prefix = 'solventDistribution/';
+%prefix = 'topView/';
 
-folder = 'lambda_2-L_512-J_0.0000_1.0000_2.0000-numIters_2-29-initialDist_60_20_20-FBC';
+folder = 'lambda_4-L_256-J_0.0000_1.0000_2.0000-numIters_2-22-initialDist_60_20_20-FBC';
 
 directory = [prefix folder];
 
@@ -22,7 +24,7 @@ skipFrames = 1;
 evapFront = 0.30;
 polDeg = 15;
 lateralView = false;
-timeDep = false; %Shows the time dependence after completion (and exports if export = true).
+timeDep = true; %Shows the time dependence after completion (and exports if export = true).
 logLog = true;
 
 F = 'png'; %pdf or png!

@@ -9,29 +9,31 @@ set(groot, 'defaultTextInterpreter','latex');
 set(groot, 'defaultLegendInterpreter','latex');
 
 %prefix = '';
-prefix = 'automatedRun/512/';
+%prefix = 'automatedRun/256/';
 %prefix = 'debug/';
+%prefix = 'J_str/';
 %prefix = 'PBCvsFBC/';
 %prefix = 'solventDistribution/';
+prefix = 'topView/';
 
-folder = 'lambda_2-L_512-J_0.0000_1.0000_2.0000-numIters_2-29-initialDist_60_20_20-FBC';
+folder = 'lambda_4-L_512-J_0.0000_1.0000_2.0000-numIters_2-26-initialDist_60_35_5-topView';
 
 directory = [prefix folder];
 
-cellVisualisation = true;
-linInt = false; m = 1.5; %m controls the contrast. Decrease to 1.0 for maximum contrast. 1.5 is a decent value. 3.5 is good for the disks in the topView.
+cellVisualisation = true; cD = 16;
+linInt = false; %Applies linear interpolation to the frames.
 gridOn = false; %will be disabled if linInt = true.
 
 FourierTransform = false; %disables gridOn an shows the fft image.
-FTMap = parula(4096);
+FTMap = parula(2^cD);
 
 f = 'pdf'; %pdf or png!
 export = false; %Turns on the frame export! For GIF exporting, use exporGIF below. DO NOT USE BOTH!
 gcaOnly = false;
 exportGIF = false;
-pauseTime = 0.2; %The time between each frame in the GIF.
+pauseTime = 0.1; %The time between each frame in the GIF.
 
-sequence = false; %true for whole sequence (always true for exports).
+sequence = true; %true for whole sequence (always true for exports).
 once = false; %false for currently running simulations.
 
 if exportGIF == true
@@ -101,6 +103,8 @@ while go
     
     for n = lowLim:skipFrames:b
         frame = importdata([directory '/frame-' num2str(n) '.dat']);
+        c0 = 1 - nnz(frame)/numel(frame);
+        MCS = numIters*(n-1)/(size(frame,1)*size(frame,2));
         
         if cellVisualisation == true
             L = size(frame,1);
@@ -126,36 +130,41 @@ while go
                 end
             end
             cDiff = cDown_cell - cUp_cell; %White <---> more down!
+            %cDiff = cDiff - cZero_cell;
             
-            map = gray(4096);
-%             minv = min(cZero_cell(:))
-%             maxv = max(cZero_cell(:))
+            mapRed = [0:2^cD-1]'./(2^cD-1);
+            mapGreen = [zeros(size(0:2^cD-1))]';
+            mapBlue = [zeros(size(0:2^cD-1))]';
+            solvMap = [mapRed mapGreen mapBlue];
+            
+            mapRed = [0:2^cD-1]'./(2^cD-1);
+            mapGreen = [0:2^cD-1]'./(2^cD-1);
+            mapBlue = [0:2^cD-1]'./(2^cD-1);
+            diffMap = [mapRed mapGreen mapBlue];
+            
+            mapRed = [2^cD-1:-1:0]'./(2^cD-1);
+            mapGreen = [2^cD-1:-1:0]'./(2^cD-1);
+            mapBlue = [2^cD-1:-1:0]'./(2^cD-1);
+            upMap = [mapRed mapGreen mapBlue];
+            
             minv = 0;
             maxv = 1;
-            ncol = size(map,1);
-            s = round(1+(ncol-1)*(cZero_cell-minv)/(maxv-minv));
+            ncol = size(solvMap,1);
+            solv = round(1+(ncol-1)*(cZero_cell-minv)/(maxv-minv));
+            solventRGB = ind2rgb(solv,solvMap);
             
-            mapRed = [0:4096]'./4096;
-            mapGreen = [zeros(size(0:4096))]';
-            mapBlue = [zeros(size(0:4096))]';
+            down = round(1+(ncol-1)*(cDown_cell-minv)/(maxv-minv));
+            downRGB = ind2rgb(down,diffMap);
             
-            mymap = [mapRed mapGreen mapBlue];
+            up = round(1+(ncol-1)*(cUp_cell-minv)/(maxv-minv));
+            upRGB = ind2rgb(up,upMap);
             
-            rgb_image = ind2rgb(s,mymap);
-            
-            map = gray(4096);
-%             minv = min(cDiff(:))
-%             maxv = max(cDiff(:))
             minv = -1;
             maxv = 1;
-            ncol = size(map,1);
-            s = round(1+(ncol-1)*(cDiff-minv)/(maxv-minv));
+            diff = round(1+(ncol-1)*(cDiff-minv)/(maxv-minv));
+            diffRGB = ind2rgb(diff,diffMap);
             
-            old = ind2rgb(s,map);
         end
-        
-        c0 = 1 - nnz(frame)/numel(frame);
-        MCS = numIters*(n-1)/(size(frame,1)*size(frame,2));
         
         if cellVisualisation ~= true
             mymap = [1 1 0
@@ -164,49 +173,40 @@ while go
         end
         
         if cellVisualisation == true
-            im = imfuse(old, rgb_image,'blend');
+            im = imadd(solventRGB,diffRGB);
             
-            Idouble = im2double(im);
-            avg = mean2(Idouble);
-            sigma = std2(Idouble);
-            if avg-m*sigma > 0
-                if avg+m*sigma < 1
-                    im = imadjust(im,[avg-m*sigma avg+m*sigma],[]);
-                else
-                    im = imadjust(im,[avg-m*sigma 1],[]);
-                end
-            else
-                if avg+m*sigma < 1
-                    im = imadjust(im,[0 avg+m*sigma],[]);
-                else
-                    im = imadjust(im,[0 1],[]);
-                end
-            end
+            im = im2double(im);
+            imSolv = im2double(solventRGB);
+            
+            HSVim = rgb2hsv(im);
+            HSVSolv = rgb2hsv(imSolv);
+            
+            % Correct the saturation of the merged images.
+            HSVimSat = HSVim(:, :, 2);
+            HSVSolvSat = HSVSolv(:, :, 3);
+            %HSVimSat(HSVimSat <= 0) = eps;
+            %HSVimSat = HSVimSat .* (HSVSolv(:,:,3)./HSVimSat);
+            %HSVimSat = HSVimSat + 0.9*cZero_cell*HSVSolv(:,:,3);
+            %HSVimSat = HSVimSat + 0.5*HSVSolv(:,:,3);
+            %HSVimSat = HSVimSat + 0.25*HSVSolv(:,:,3);
+            %HSVimSat = HSVSolv(:,:,3);
+            %HSVimSat = HSVimSat;
+            
+            HSVimSat = HSVSolvSat;
+            HSVim(:, :, 2) = HSVimSat;
+            im = hsv2rgb(HSVim);
             
             if linInt == true
-                im = im2double(im);
-                imInt = interp3(im,2,'linear');
+                im = im2double(im); %First convert the image into double
+                F = griddedInterpolant(im); %Then create 'a gridded interpolant object for the image'
+                F.Method = 'linear'; % Select interpolation method (spline is the best one)
                 
-                for i = 1:size(imInt,1)
-                    for j = 1:size(imInt,2)
-                        h = 0;
-                        for k = 1:size(imInt,3)/3:size(imInt,3)-size(imInt,3)/3+1
-                            imTest(i,j,k+h*(1-size(imInt,3)/3)) = sum(imInt(i,j,k:k+size(imInt,3)/3-1))/(size(imInt,3)/3);
-                            h = h + 1;
-                        end
-                    end
-                end
+                [sx,sy,sz] = size(im); % Record the sizes of the image data
+                xq = (1:0.05:sx)'; % Make the grid finer for the "x and y" data
+                yq = (1:0.05:sy)';
+                zq = (1:sz)'; % Preserve the colour data
+                imTest = F({xq,yq,zq}); % Apply the interpolation to the data
                 
-                HSV = rgb2hsv(imTest);
-                
-                % "25% more" saturation:
-                HSV(:, :, 2) = HSV(:, :, 2) * 1.25;
-                % or add:
-                % HSV(:, :, 2) = HSV(:, :, 2) + 0.2;
-                HSV(HSV > 1) = 1;  % Limit values
-                imTest = hsv2rgb(HSV);
-                
-                imagesc(imTest);
                 gridOn = false;
                 
                 if FourierTransform == true
@@ -214,7 +214,7 @@ while go
                     Y = fftshift(fft2(imTest(:,[1:size(imTest,1)])));
                     imagesc(abs(Y));
                 else
-                    imagesc(imTest);
+                     imagesc(imTest);
                 end
                 
             else
@@ -225,8 +225,11 @@ while go
                     gridOn = false;
                 else
                     imagesc(im);
-                    %imagesc(imfuse(old, rgb_image,'blend')); %DEBUGGING
-                    %imagesc(rgb_image); %DEBUGGING
+                    %imagesc(downRGB);
+                    %imagesc(upRGB);
+                    %imagesc(diffRGB); %BLACK AND WHITE
+                    %imagesc(solventRGB); %RED
+                    
                     sF = 1;
                 end
                 
@@ -316,8 +319,8 @@ while go
         
         %pause(1)
         %pause(0.5)
-        pause(0.1)
-        %pause(0.0333); % 0.0167 for 60 FPS, 0.0333 for 30 FPS
+        %pause(0.1)
+        pause(0.0333); % 0.0167 for 60 FPS, 0.0333 for 30 FPS
         %pause(0.0167);
         %sum(frame(:))/(size(frame,1)^2)
     end

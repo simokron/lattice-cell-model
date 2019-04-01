@@ -8,13 +8,17 @@ set(groot, 'defaultAxesTickLabelInterpreter','latex');
 set(groot, 'defaultTextInterpreter','latex');
 set(groot, 'defaultLegendInterpreter','latex');
 
-x = [4, 8, 16, 32, 64];
-yF = [1.05727875, 1.13801157, 1.28465378, 1.49189711, 1.77337289]; %FBC; L = 1024
-yP = [1.06241822, 1.14819252, 1.30451047, 1.53615487, 1.85011041]; %PBC; L = 1024
+x = [2, 4, 8, 16, 32, 64]; leng = 1:size(x,2);
 
-yF2 = [1.21179819, 1.27475214, 1.43546546, 1.71248770, 1.98802304]; %FBC; L = 512
+yF = [1.08747876, 1.01214349, 1.14117622, 1.23938262, 1.97696221]; %FBC; L = 128
+
+yF = [yF, 1.02918613, 0.935339808, 1.01214576, 1.20282924, 1.25657368, 1.97355664]; %FBC; L = 256
+%yP = [0.928037643, 1.14819252, 1.30451047, 1.53615487, 1.85011041]; %PBC; L = 256
+
+yF = [yF, 0.989822507, 0.859253883, 0.926216125, 1.00834835, 1.20077586, 1.25075674]; %FBC; L = 512
 
 export = false;
+bol = exist('yP');
 
 %f=fit(x',y','linear')
 
@@ -28,11 +32,15 @@ export = false;
 set(gca,'FontSize',14)
 grid on
 hold on
-plot(x,yF,'.k', 'MarkerSize',20)
-plot(x,yP,'.m', 'MarkerSize',20)
-
-%plot(x,yF,'.k', 'MarkerSize',20)
-%plot(x,yF2,'.m', 'MarkerSize',20)
+if exist('yP') == 1
+    plot(x, yF(leng),'.k', 'MarkerSize',20)
+    plot(x, yP(leng),'.m', 'MarkerSize',20)
+else
+    leng2 = 1:size(x,2)-1;
+    plot(x(leng2), yF(leng2),'.k', 'MarkerSize',20)
+    plot(x(leng), yF(leng + max(leng2)),'.m', 'MarkerSize',20)
+    plot(x(leng), yF(leng + max(leng2) + size(x,2)),'.b', 'MarkerSize',20)
+end
 
 hold off
 
@@ -40,12 +48,15 @@ hold off
 xlabel('$\lambda$ [$\log_2$]')
 ylabel('$\langle \mathcal{H}_{\textnormal{int}} \rangle$')
 %title('Line profiles')
-legend('FBC','PBC','Location','southeast')
-%legend('$L = 1024$','$L = 512$','Location','southeast')
+if exist('yP') == 1
+    legend('FBC','PBC','Location','southeast')
+else
+    legend('$L = 128$','$L = 256$','$L = 512$','Location','northwest')
+end
 box on
 
 xlim([min(x) - 1*min(x), max(x) + 0.1*max(x)]);
-ylim([min([yF yF2]) - 0.1*min([yF yF2]), max([yF yF2]) + 0.1*max([yF yF2])]);
+ylim([min(yF) - 0.1*min(yF), max(yF) + 0.1*max(yF)]);
 %set(gca, 'YScale', 'log')
 %set(gca, 'XScale', 'log')
 %

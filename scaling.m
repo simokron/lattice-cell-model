@@ -18,7 +18,7 @@ set(groot, 'defaultLegendInterpreter','latex');
 % y = [29 26 24 22 20 18]-4;
 
 x = 128./[2 4 8 16 32 64];
-y = [29 26 24 22 20 18]-7;
+y = [29 26 24 22 20 18]-10;
 
 f=fit(x',y','power1');
 coeffvalues(f)
