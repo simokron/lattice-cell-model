@@ -5,7 +5,7 @@
 !This module contains the constants used in the calculations.
 module constants
     implicit none
-    
+
     integer :: L, lambda
     real :: J_str(3,3)
     real, parameter :: beta = 0.6, cutoffConc = 0.1
@@ -14,20 +14,27 @@ module constants
     real, dimension (:,:), allocatable :: energyCells
     integer, dimension (:,:,:), allocatable :: numSpins
     character(256), allocatable :: dir
-    character(256) :: prefix = 'automatedRun/128/'
+!    character(256) :: prefix = 'automatedRun/128/'
 !    character(256) :: folder = 'lambda_2-L_128-J_0.0000_1.0000_2.0000-numIters_2-19-initialDist_60_20_20-FBC'
 !    character(256) :: folder = 'lambda_4-L_128-J_0.0000_1.0000_2.0000-numIters_2-16-initialDist_60_20_20-FBC'
 !    character(256) :: folder = 'lambda_8-L_128-J_0.0000_1.0000_2.0000-numIters_2-14-initialDist_60_20_20-FBC'
 !    character(256) :: folder = 'lambda_16-L_128-J_0.0000_1.0000_2.0000-numIters_2-12-initialDist_60_20_20-FBC'
-    character(256) :: folder = 'lambda_32-L_128-J_0.0000_1.0000_2.0000-numIters_2-10-initialDist_60_20_20-FBC'
+!    character(256) :: folder = 'lambda_32-L_128-J_0.0000_1.0000_2.0000-numIters_2-10-initialDist_60_20_20-FBC'
 
-!    character(256) :: prefix = 'automatedRun/256/'
+    character(256) :: prefix = 'automatedRun/256/'
 !    character(256) :: folder = 'lambda_2-L_256-J_0.0000_1.0000_2.0000-numIters_2-25-initialDist_60_20_20-FBC'
 !    character(256) :: folder = 'lambda_4-L_256-J_0.0000_1.0000_2.0000-numIters_2-22-initialDist_60_20_20-FBC'
 !    character(256) :: folder = 'lambda_8-L_256-J_0.0000_1.0000_2.0000-numIters_2-20-initialDist_60_20_20-FBC'
 !    character(256) :: folder = 'lambda_16-L_256-J_0.0000_1.0000_2.0000-numIters_2-18-initialDist_60_20_20-FBC'
 !    character(256) :: folder = 'lambda_32-L_256-J_0.0000_1.0000_2.0000-numIters_2-16-initialDist_60_20_20-FBC'
 !    character(256) :: folder = 'lambda_64-L_256-J_0.0000_1.0000_2.0000-numIters_2-14-initialDist_60_20_20-FBC'
+
+!    character(256) :: folder = 'lambda_2-L_256-J_0.0000_1.0000_2.0000-numIters_2-25-initialDist_60_20_20-PBC'
+!    character(256) :: folder = 'lambda_4-L_256-J_0.0000_1.0000_2.0000-numIters_2-22-initialDist_60_20_20-PBC'
+!    character(256) :: folder = 'lambda_8-L_256-J_0.0000_1.0000_2.0000-numIters_2-20-initialDist_60_20_20-PBC'
+!    character(256) :: folder = 'lambda_16-L_256-J_0.0000_1.0000_2.0000-numIters_2-18-initialDist_60_20_20-PBC'
+!    character(256) :: folder = 'lambda_32-L_256-J_0.0000_1.0000_2.0000-numIters_2-16-initialDist_60_20_20-PBC'
+    character(256) :: folder = 'lambda_64-L_256-J_0.0000_1.0000_2.0000-numIters_2-14-initialDist_60_20_20-PBC'
 
 !    character(256) :: prefix = 'automatedRun/512/'
 !    character(256) :: folder = 'lambda_2-L_512-J_0.0000_1.0000_2.0000-numIters_2-29-initialDist_60_20_20-FBC'
@@ -36,6 +43,17 @@ module constants
 !    character(256) :: folder = 'lambda_16-L_512-J_0.0000_1.0000_2.0000-numIters_2-22-initialDist_60_20_20-FBC'
 !    character(256) :: folder = 'lambda_32-L_512-J_0.0000_1.0000_2.0000-numIters_2-20-initialDist_60_20_20-FBC'
 !    character(256) :: folder = 'lambda_64-L_512-J_0.0000_1.0000_2.0000-numIters_2-18-initialDist_60_20_20-FBC'
+!    character(256) :: folder = 'lambda_128-L_512-J_0.0000_1.0000_2.0000-numIters_2-17-initialDist_60_20_20-FBC'
+
+!    character(256) :: prefix = 'automatedRun/1024/'
+!    character(256) :: folder = 'lambda_2-L_1024-J_0.0000_1.0000_2.0000-numIters_2-30-initialDist_60_20_20-FBC'
+!    character(256) :: folder = 'lambda_4-L_1024-J_0.0000_1.0000_2.0000-numIters_2-30-initialDist_60_20_20-FBC'
+!    character(256) :: folder = 'lambda_8-L_1024-J_0.0000_1.0000_2.0000-numIters_2-29-initialDist_60_20_20-FBC'
+!    character(256) :: folder = 'lambda_16-L_1024-J_0.0000_1.0000_2.0000-numIters_2-27-initialDist_60_20_20-FBC'
+!    character(256) :: folder = 'lambda_32-L_1024-J_0.0000_1.0000_2.0000-numIters_2-25-initialDist_60_20_20-FBC'
+!    character(256) :: folder = 'lambda_64-L_1024-J_0.0000_1.0000_2.0000-numIters_2-23-initialDist_60_20_20-FBC'
+!    character(256) :: folder = 'lambda_128-L_1024-J_0.0000_1.0000_2.0000-numIters_2-21-initialDist_60_20_20-FBC'
+
 
 !    character(256) :: prefix = 'PBCvsFBC/'
 !    character(256) :: folder = 'lambda_4-L_256-J_0.0000_1.0000_2.0000-numIters_2-22-initialDist_60_20_20-PBC'
@@ -52,22 +70,22 @@ contains
     subroutine findParamaters(dir, lambda, L)
         character(256) :: dir
         integer :: lambda, L
-    
+
         character(256) :: tStr
         integer :: ipos, iposLim, t(1:16)
-    
+
         ipos = index(dir,"lambda_")
         iposLim = index(trim(dir(ipos +len("lambda_"):)),"-L")
         tStr = trim(dir(ipos + len("lambda_"):ipos + len("lambda_") + iposLim - 2))
         read(tStr(1:),'(i6)') t(1)
         lambda = t(1)
-        
+
         ipos = index(dir,"L_")
         iposLim = index(trim(dir(ipos +len("L_"):)),"-J")
         tStr = trim(dir(ipos + len("L_"):ipos + len("L_") + iposLim - 2))
         read(tStr(1:),'(i6)') t(1)
         L = t(1)
-        
+
 !        ipos = index(dir,"numIters_")
 !        tStr = trim(dir(ipos +len("numIters_"):ipos + len("numIters_")+3))
 !        read(tStr(1:1),'(i6)') t(1)
@@ -164,7 +182,7 @@ contains
 
     function calcEnergy(sigma)result(energyResult)
         integer :: sigma(L,L)
-    
+
         integer :: numSpins(L/lambda,L/lambda,1:3), coordNum
         integer :: j_c, i_c, j_d, j_u, i_l, i_r, k, b, h
         real :: E_current
@@ -173,14 +191,14 @@ contains
         real :: energyResult(L/lambda,L/lambda)
 
         numSpins = initialNum(L, lambda, sigma) !Determines the initial number of spins.
-        
+
         do j_c = 1, L/lambda
             do i_c = 1, L/lambda
                 PBCtemp = PBC(j_c, i_c, L/lambda)
                 j_u = PBCTemp(1); i_l = PBCTemp(2); j_d = PBCTemp(3); i_r = PBCTemp(4)
-                
+
                 cellNeighbours = [[j_u, i_c], [j_c, i_l], [j_d, i_c], [j_c, i_r]]
-                
+
                 !Reset for each cell.
                 E_current = 0; coordNum = 4
 
@@ -192,7 +210,7 @@ contains
                             coordNum = coordNum - 1
                         endif
                     endif
-    
+
                     c = 4./coordNum
                 enddo
 
@@ -212,14 +230,14 @@ contains
                     enddo
         20          continue
                 enddo
-                
+
                 energyResult(j_c, i_c) = E_current
             enddo
         enddo
-        
+
         return
-    end 
-    
+    end
+
 end module functions
 
 !This module contains the subroutines utilised throughout.
@@ -231,10 +249,10 @@ contains
     subroutine nFinder(dir, n, L)
         character(256) :: dir
         integer :: n, L
-        
+
         character(256) :: file_id, file_name
         logical :: file_exists = .true.
-    
+
         n = 0
         do while (file_exists .eqv. .true.)
             n = n + 1
@@ -243,7 +261,7 @@ contains
             inquire(file = trim(file_name), exist = file_exists)
         enddo
         n = n - 1
-        
+
         do while (conc < cutoffConc)
             write(file_id, '(i0)') n
             file_name = trim(dir) // '/frame-' // trim(adjustl(file_id)) // '.dat'
@@ -252,12 +270,12 @@ contains
                 read(10,*) (sigma(j,i), i = 1,L)
             enddo
             close(10)
-        
+
             conc = real(count(sigma == 0))/real(L**2)
             n = n - 1
         enddo
         n = n + 1
-    
+
     end subroutine nFinder
 
 end module
@@ -273,7 +291,7 @@ program interfacialEnergy
     character(256) :: file_id, file_name
 
     dir = trim(prefix) // trim(folder)
-    
+
     call findParamaters(dir, lambda, L)
     allocate(sigma(L,L))
     allocate(numSpins(L/lambda,L/lambda,1:3))

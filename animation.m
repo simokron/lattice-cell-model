@@ -9,19 +9,18 @@ set(groot, 'defaultTextInterpreter','latex');
 set(groot, 'defaultLegendInterpreter','latex');
 
 %prefix = '';
-%prefix = 'automatedRun/256/';
+%prefix = 'automatedRun/1024/';
 %prefix = 'debug/';
 %prefix = 'J_str/';
 %prefix = 'PBCvsFBC/';
-%prefix = 'solventDistribution/';
-prefix = 'topView/';
+prefix = 'solventDistribution/';
+%prefix = 'topView/';
 
-folder = 'lambda_4-L_512-J_0.0000_1.0000_2.0000-numIters_2-26-initialDist_60_35_5-topView';
-
+folder = 'lambda_4-L_256-J_0.0000_1.0000_0.0000-numIters_2-22-initialDist_80_10_10-FBC';
 directory = [prefix folder];
 
-cellVisualisation = true; cD = 16;
-linInt = false; %Applies linear interpolation to the frames.
+cellVisualisation = true; cD = 16; %cD is the colour-depth (8 for 8 bit, 12 for 12 bit etc).
+linInt = false; mag = 20; %Applies linear interpolation to the frames; mag is the magnification (e.g. 20 times).
 gridOn = false; %will be disabled if linInt = true.
 
 FourierTransform = false; %disables gridOn an shows the fft image.
@@ -103,6 +102,10 @@ while go
     
     for n = lowLim:skipFrames:b
         frame = importdata([directory '/frame-' num2str(n) '.dat']);
+        if(size(frame,1) ~= size(frame,2))
+            break;
+        end 
+            
         c0 = 1 - nnz(frame)/numel(frame);
         MCS = numIters*(n-1)/(size(frame,1)*size(frame,2));
         
@@ -202,8 +205,8 @@ while go
                 F.Method = 'linear'; % Select interpolation method (spline is the best one)
                 
                 [sx,sy,sz] = size(im); % Record the sizes of the image data
-                xq = (1:0.05:sx)'; % Make the grid finer for the "x and y" data
-                yq = (1:0.05:sy)';
+                xq = (1:1/mag:sx)'; % Make the grid finer for the "x and y" data
+                yq = (1:1/mag:sy)';
                 zq = (1:sz)'; % Preserve the colour data
                 imTest = F({xq,yq,zq}); % Apply the interpolation to the data
                 

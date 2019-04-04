@@ -9,27 +9,26 @@ set(groot, 'defaultTextInterpreter','latex');
 set(groot, 'defaultLegendInterpreter','latex');
 
 %prefix = '';
-prefix = 'automatedRun/1024/';
+%prefix = 'automatedRun/1024/';
 %prefix = 'debug/';
 %prefix = 'J_str/';
-%prefix = 'PBCvsFBC/';
+prefix = 'PBCvsFBC/';
 %prefix = 'solventDistribution/';
 %prefix = 'topView/';
 
-folder = 'lambda_4-L_1024-J_0.0000_1.0000_2.0000-numIters_2-30-initialDist_60_20_20-FBC';
-
+folder = 'lambda_4-L_256-J_0.0000_1.0000_2.0000-numIters_2-22-initialDist_60_20_20-FBC';
 directory = [prefix folder];
 
 cutoffConc = 0.1;
-fitType = 'exp1';
+fitType = 'exp2';
 
 ipos = strfind(directory,'lambda_') + strlength("lambda_");
 iposLim = strfind(directory,'-L_') - 1;
-lambda = str2num(directory(ipos:iposLim))
+lambda = str2num(directory(ipos:iposLim));
 
 ipos = strfind(directory,'numIters_2-') + strlength("numIters_2-");
 iposLim = strfind(directory,'-initialDist_') - 1;
-exponent = str2num(directory(ipos:iposLim))
+exponent = str2num(directory(ipos:iposLim));
 numIters = 2^exponent;
 
 go = true; tempPause = true;

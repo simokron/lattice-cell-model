@@ -9,26 +9,25 @@ set(groot, 'defaultTextInterpreter','latex');
 set(groot, 'defaultLegendInterpreter','latex');
 
 %prefix = '';
-prefix = 'automatedRun/256/';
+%prefix = 'automatedRun/1024/';
 %prefix = 'debug/';
 %prefix = 'J_str/';
-%prefix = 'PBCvsFBC/';
+prefix = 'PBCvsFBC/';
 %prefix = 'solventDistribution/';
 %prefix = 'topView/';
 
 folder = 'lambda_4-L_256-J_0.0000_1.0000_2.0000-numIters_2-22-initialDist_60_20_20-FBC';
-
 directory = [prefix folder];
 
-skipFrames = 1;
-evapFront = 0.30;
-polDeg = 15;
+skipFrames = 3;
+evapFront = 0.35;
+polDeg = 5;
 lateralView = false;
 timeDep = true; %Shows the time dependence after completion (and exports if export = true).
 logLog = true;
 
-F = 'png'; %pdf or png!
-export = false; %Turns on the frame export! For GIF exporting, use exporGIF below. DO NOT USE BOTH!
+F = 'pdf'; %pdf or png!
+export = true; %Turns on the frame export! For GIF exporting, use exporGIF below. DO NOT USE BOTH!
 fontSize = 14; % 14 for 0.5\linewidth; 21 for 0.33\linewidth (for 1:1 scale - try 18 if it's too large)
 exportGIF = false;
 pauseTime = 0.2; %The time between each frame in the GIF.
@@ -134,9 +133,9 @@ for n = 1:skipFrames:b
     set(gca,'FontSize',fontSize)
     hold on
     if timeDep == false
-        plot(X,c2,'ok', 'MarkerSize',5)
+        %plot(X,c2,'ok', 'MarkerSize',5)
         plot(X,c0,'.r', 'MarkerSize',20)
-        plot(X,c1,'.k', 'MarkerSize',20)
+        %plot(X,c1,'.k', 'MarkerSize',20)
     else
         plot(X,c0,'.r', 'MarkerSize',20)
     end
@@ -164,8 +163,8 @@ for n = 1:skipFrames:b
     end
     if timeDep == false
         ylabel('Concentration')
-        %legend('$c_{0}$','Location','northwest')
-        legend('$c_{-1}$','$c_{0}$','$c_{+1}$','Location','northwest')
+        legend('$c_{0}$','Location','northwest')
+        %legend('$c_{-1}$','$c_{0}$','$c_{+1}$','Location','northwest')
     else
         ylabel('Concentration')
         legend('$c_{0}$','Polynomial fit','Location','northwest')
@@ -255,7 +254,7 @@ end
 
 %%
 if timeDep == true && lateralView == false
-    cutoff = 15;
+    cutoff = 12;
     
     frame = importdata([directory '/frame-' num2str(n-skipFrames) '.dat']);
     MCS = MCS(MCS~=0); x0 = x0(x0~=0); %Remove zeros.
@@ -297,7 +296,7 @@ if timeDep == true && lateralView == false
         fun = fit(lMCS(1:end-cutoff),lx0(1:end-cutoff),'poly1'); coeffs = coeffvalues(fun);
         if cutoff > 0
             fun2 = fit(lMCS(end-cutoff+1:end),lx0(end-cutoff+1:end),'poly1'); coeffs2 = coeffvalues(fun2);
-            X2 = [min(lMCS(end-cutoff:end)):0.01:max(lMCS(end-cutoff:end))]';
+            X2 = [min(lMCS(end-cutoff+1:end)):0.01:max(lMCS(end-cutoff+1:end))]';
         end
         X = [min(lMCS(1:end-cutoff)):0.01:max(lMCS(1:end-cutoff))]';
         X = [min(lMCS):0.01:max(lMCS)]';
@@ -310,7 +309,7 @@ if timeDep == true && lateralView == false
         hold on
         if cutoff > 0
             plot(lMCS(1:end-cutoff),lx0(1:end-cutoff),'.k', 'MarkerSize',20)
-            plot(lMCS(end-cutoff:end),lx0(end-cutoff:end),'.', 'MarkerSize',20, 'Color', [0 0 0] + 0.70)
+            plot(lMCS(end-cutoff+1:end),lx0(end-cutoff+1:end),'.', 'MarkerSize',20, 'Color', [0 0 0] + 0.70)
         else
             plot(lMCS,lx0,'.k', 'MarkerSize',20)
         end
@@ -361,7 +360,11 @@ if timeDep == true && lateralView == false
         tightfig;
         
         fig = gcf;
-        filename = sprintf([directory '-timeDep.' F]);
+        if logLog == true
+            filename = sprintf([directory '-timeDep-loglog.' F]);
+        else
+            filename = sprintf([directory '-timeDep.' F]);
+        end
         if sum(F == 'png') == 3
             frame = getframe(fig);
             im = frame2im(frame);

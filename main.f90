@@ -10,24 +10,24 @@ module constants
     !beta is the reciprocal temperature; p0 is the concentration of zeroes at t = 0; p1 is the concentration of +1 (and -1 at the moment); phi is to volatility; cutoffConc is the final residual solvent concentration - set to negative number for infinite run-time.
     !To boolean constSeed uses a constant seed for the RNG (for debugging); FBC enables the free boundary conditions.
     !sigma is the spin matrix; numSpins is a tensor of rank 3 which stores the number of spins of each spices per cell.
-    integer,parameter :: L = 512, lambda = 4
-!    character(128) :: prefix = 'automatedRun/256/'
+    integer,parameter :: L = 256, lambda = 4
+!    character(128) :: prefix = 'automatedRun/1024/'
 !    character(128) :: prefix = 'debug/'
 !    character(128) :: prefix = 'J_str/'
 !    character(128) :: prefix = 'PBCvsFBC/'
-!    character(128) :: prefix = 'solventDistribution/'
-    character(128) :: prefix = 'topView/'
-!    real,parameter :: beta = 0.6, p0 = 0.6, p1 = (1 - p0)/2, phi = 0.0, cutoffConc = 0.1
-    real,parameter :: beta = 0.6, p0 = 0.6, p1 = 0.35, phi = 0.0, cutoffConc = 0.1
-    logical,parameter :: constSeed = .false., FBC = .true., topView = .true.
+    character(128) :: prefix = 'solventDistribution/'
+!    character(128) :: prefix = 'topView/'
+    real,parameter :: beta = 0.6, p0 = 0.8, p1 = (1 - p0)/2, phi = 0.0, cutoffConc = 0.1
+!    real,parameter :: beta = 0.6, p0 = 0.4, p1 = 0.35, phi = 0.0, cutoffConc = -0.01
+    logical,parameter :: constSeed = .false., FBC = .true., topView = .false.
     integer :: sigma(L,L), numSpins(L/lambda,L/lambda,1:3)
     integer, allocatable :: numIters
 
 !    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*[0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !J_ORIGINAL SCALED
-    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*[0, 1, 2, 1, 0, 1, 2, 1, 0], shape(J_str))) !2
+!    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*[0, 1, 2, 1, 0, 1, 2, 1, 0], shape(J_str))) !2
 !    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*[0, 1, 3, 1, 0, 1, 3, 1, 0], shape(J_str))) !3
 
-!    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*[0, 1, 0, 1, 0, 1, 0, 1, 0], shape(J_str))) !+1 and -1 are functionally the same.
+    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*[0, 1, 0, 1, 0, 1, 0, 1, 0], shape(J_str))) !+1 and -1 are functionally the same.
 
 !    integer,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 6, 1, 0, 3, 6, 3, 0], shape(J_str))) !This will form a 'cap' of +1, cf. fig. 4 in Andrea's paper.
 !    integer,dimension(3, 3) :: J_str = transpose(reshape([0, 35, 15, 35, 0, 35, 15, 35, 0], shape(J_str))) !This is the 'strong repulsion' in Andrea's paper. It kinda works but I need much more energy..
@@ -106,7 +106,7 @@ contains
         else
             j = int(aint(c/length) + 1)
         endif
-        
+
         !Now we simply determine the column i_c from
         i = int(c) - length*(j-1)
 
@@ -156,7 +156,7 @@ contains
         !Next we define some stuff to simplify the PBC (for the cells!).
         j_u = j - 1; j_d = j + 1; i_l = i - 1; i_r = i + 1
 
-        !The first one: "if you are in the first column, the neighbour to your left will be the rightmost cell on the same row", and analogously for the rest
+        !The first one: "if you are in the first column, the neighbour to your left will be the rightmost cell on the same row", and analogously for the rest.
         if(i == 1) then
             i_l = length
         elseif(i == length) then
@@ -235,7 +235,7 @@ contains
         integer, dimension(1:2) :: coordNum
         integer, dimension(1:3) :: numSpinsA, numSpinsB, numSpinsAprop, numSpinsBprop
         integer, dimension(1:3) :: numSpinsIntA, numSpinsIntB
-        real :: E_current, E_proposed, energyResult(1:2) 
+        real :: E_current, E_proposed, energyResult(1:2)
         real, dimension(1:2) :: c
 
         !Reset the values before each run.
@@ -281,7 +281,7 @@ contains
 !                E_proposed = E_proposed + numSpinsAprop(k)*numSpinsBprop(b)*J_str(k,b)
 !            enddo
 !        enddo
-        
+
         do h = 1, 11, 2
             if(FBC .eqv. .true. .and. topView .eqv. .false.) then
                 if(j_c == L/lambda) then
@@ -291,9 +291,9 @@ contains
                     elseif(t == 2) then
                         if(h == 5) coordNum(2) = coordNum(2) - 1
                         if(h == 7) coordNum(1) = coordNum(1) - 1
-                       
+
                     elseif(t == 3) then
-                        
+
                     elseif(t == 4) then
                         if(h == 5) coordNum(1) = coordNum(1) - 1
                         if(h == 7) coordNum(2) = coordNum(2) - 1
@@ -306,10 +306,10 @@ contains
                     elseif(t == 2) then
                         if(h == 1) coordNum(2) = coordNum(2) - 1
                         if(h == 11) coordNum(1) = coordNum(1) - 1
-                        
+
                     elseif(t == 3) then
                         if(h == 9) coordNum(1) = coordNum(1) - 1
-                        
+
                     elseif(t == 4) then
                         if(h == 1) coordNum(1) = coordNum(1) - 1
                         if(h == 11) coordNum(2) = coordNum(2) - 1
@@ -346,9 +346,9 @@ contains
 
                     elseif(t == 2) then
                         if(h == 5) GO TO 15
-                       
+
                     elseif(t == 3) then
-                        
+
                     elseif(t == 4) then
                         if(h == 5) GO TO 15
 
@@ -359,9 +359,9 @@ contains
 
                     elseif(t == 2) then
                         if(h == 1) GO TO 15
-                        
+
                     elseif(t == 3) then
-                        
+
                     elseif(t == 4) then
                         if(h == 1) GO TO 15
 
@@ -394,9 +394,9 @@ contains
 
                     elseif(t == 2) then
                         if(h == 7) GO TO 25
-                       
+
                     elseif(t == 3) then
-                        
+
                     elseif(t == 4) then
                         if(h == 7) GO TO 25
 
@@ -407,10 +407,10 @@ contains
 
                     elseif(t == 2) then
                         if(h == 11) GO TO 25
-                        
+
                     elseif(t == 3) then
                         if(h == 9) GO TO 25
-                        
+
                     elseif(t == 4) then
                         if(h == 11) GO TO 25
 
@@ -466,7 +466,7 @@ contains
             numSpins(j_c,i_c,-1+2) = numSpins(j_c,i_c,-1+2) + 1
         endif
     end subroutine evap
-    
+
     !This subroutine updates sigma, should the proposed move be approved (trivial, but convenient to have as a subroutine).
     subroutine updateSigma(spin, spin_p, sigma, j_s, i_s, j_s_p, i_s_p)
         integer :: spin, spin_p, sigma(L,L), j_s, i_s, j_s_p, i_s_p
@@ -540,7 +540,7 @@ contains
             !Then we determine the "ij-coordinates" of the origin cell of the bond (note that Fortran uses row-major order, i.e. sigma(j,i), where j is the row).
             cellTemp = findCoord(c, L/lambda)
             j_c = cellTemp(1); i_c = cellTemp(2)
-            
+
             !Now we randomly select a spin inside of the first cell of the bond.
             call random_number(u); s = 1 + floor((lambda**2)*u) !This yields an integer between 1 and lambda^2 (i.e. the total number of spins in a cell).
 
@@ -568,7 +568,7 @@ contains
             else
                 j_c_p = j_c; i_c_p = i_r
             endif
-            
+
             !And then we re-run PBC() to find the nearest-neighbours. In principle, this could be hard-coded, but it's so quick that it doesn't really matter.
             PBCtemp = PBC(j_c_p, i_c_p, L/lambda)
             j_u_p = PBCTemp(1); i_l_p = PBCTemp(2); j_d_p = PBCTemp(3); i_r_p = PBCTemp(4)
@@ -617,7 +617,7 @@ contains
                 GO TO 10
             endif
 30          continue
-            
+
             !-Avoid moves across top/bottom boundary----------------------------
             if(topView .eqv. .false.) then
                 if(j_c == 1 .and. t == 1) then
@@ -626,10 +626,10 @@ contains
                     GO TO 10
                 endif
             endif
-            
+
             !-Dynamics----------------------------------------------------------
             !Before we compute the energy, we must find the nearest-neighbouring cells.
-            if(t == 1) then 
+            if(t == 1) then
                 cellNeighbours = [[j_c,i_l], [j_d,i_c], [j_c,i_r], [j_c_p,i_r_p], [j_u_p,i_c_p], [j_c_p,i_l_p]]
             elseif(t == 2) then
                 cellNeighbours = [[j_u_p,i_c_p], [j_c_p,i_l_p], [j_d_p,i_c_p], [j_d,i_c], [j_c,i_r], [j_u,i_c]]
@@ -642,7 +642,7 @@ contains
             !Now we simply call the energySelected function, with the needed information and BAM! Just like that, we're done. Thanks, objective oriented programming.
             energy = energySelected(spin, spin_p, t, numSpins, j_c, i_c, j_c_p, i_c_p, cellNeighbours)
             dE = energy(2) - energy(1)
-            
+
 !            print *, dE
 
             !Now we simply insert the acceptance criteria from the model.
@@ -658,7 +658,7 @@ contains
             endif
 
         enddo
-        
+
         return
 
     end subroutine metropolis
@@ -678,7 +678,7 @@ module strings
     interface num2str
       module procedure num2str_int
       module procedure num2str_real
-    end interface 
+    end interface
 
 contains
 
@@ -697,7 +697,7 @@ contains
         real,intent(in)    :: number
         character(len=6)   :: num2str_real
         character(len=6)   :: tmp
-        
+
         write(tmp,'(F6.4)')number
         num2str_real = tmp
     end function
@@ -740,7 +740,7 @@ program main
         print '("Integer overflow - using maximum numIters exponent of 30...",/,"Press ENTER to continue.")'
         read(stdin,*)
         expon = 30
-    endif 
+    endif
     numIters = 2**(expon)
 
     !This creates a directory with the correct name (if it does not currently exist).
@@ -748,7 +748,7 @@ program main
     folderName = 'lambda_' // trim(adjustl(num2str(lambda))) // '-L_' // trim(adjustl(num2str(L))) // '-J_' // &
         trim(adjustl(num2str(J_str(1,1)*lambda**2))) // '_' // trim(adjustl(num2str(J_str(1,2)*lambda**2))) // '_' // &
         trim(adjustl(num2str(J_str(1,3)*lambda**2))) // '-numIters_2-' // trim(adjustl(num2str(nI))) // '-initialDist_' // &
-        trim(adjustl(num2str(nint(p0*100.)))) // '_' // trim(adjustl(num2str(nint(p1*100)))) // '_' // & 
+        trim(adjustl(num2str(nint(p0*100.)))) // '_' // trim(adjustl(num2str(nint(p1*100)))) // '_' // &
         trim(adjustl(num2str(nint((1 - p0 - p1)*100))))
     if(topView .eqv. .false.) then
         if(FBC .eqv. .true.) folderName = trim(folderName) // '-FBC'
