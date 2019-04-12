@@ -10,24 +10,24 @@ module constants
     !beta is the reciprocal temperature; p0 is the concentration of zeroes at t = 0; p1 is the concentration of +1 (and -1 at the moment); phi is to volatility; cutoffConc is the final residual solvent concentration - set to negative number for infinite run-time.
     !To boolean constSeed uses a constant seed for the RNG (for debugging); FBC enables the free boundary conditions.
     !sigma is the spin matrix; numSpins is a tensor of rank 3 which stores the number of spins of each spices per cell.
-    integer,parameter :: L = 256, lambda = 4
+    integer,parameter :: L = 512, lambda = 8
 !    character(128) :: prefix = 'automatedRun/1024/'
 !    character(128) :: prefix = 'debug/'
 !    character(128) :: prefix = 'J_str/'
 !    character(128) :: prefix = 'PBCvsFBC/'
-    character(128) :: prefix = 'solventDistribution/'
-!    character(128) :: prefix = 'topView/'
-    real,parameter :: beta = 0.6, p0 = 0.8, p1 = (1 - p0)/2, phi = 0.0, cutoffConc = 0.1
-!    real,parameter :: beta = 0.6, p0 = 0.4, p1 = 0.35, phi = 0.0, cutoffConc = -0.01
-    logical,parameter :: constSeed = .false., FBC = .true., topView = .false.
+!    character(128) :: prefix = 'solventDistribution/'
+    character(128) :: prefix = 'topView/'
+!    real,parameter :: beta = 0.6, p0 = 0.6, p1 = (1 - p0)/2, phi = 0.0, cutoffConc = 0.1
+    real,parameter :: beta = 0.6, p0 = 0.6, p1 = 0.30, phi = 0.0, cutoffConc = -0.01
+    logical,parameter :: constSeed = .false., FBC = .true., topView = .true.
     integer :: sigma(L,L), numSpins(L/lambda,L/lambda,1:3)
     integer, allocatable :: numIters
 
 !    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*[0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !J_ORIGINAL SCALED
-!    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*[0, 1, 2, 1, 0, 1, 2, 1, 0], shape(J_str))) !2
+    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*[0, 1, 2, 1, 0, 1, 2, 1, 0], shape(J_str))) !2
 !    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*[0, 1, 3, 1, 0, 1, 3, 1, 0], shape(J_str))) !3
 
-    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*[0, 1, 0, 1, 0, 1, 0, 1, 0], shape(J_str))) !+1 and -1 are functionally the same.
+!    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*[0, 1, 0, 1, 0, 1, 0, 1, 0], shape(J_str))) !+1 and -1 are functionally the same.
 
 !    integer,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 6, 1, 0, 3, 6, 3, 0], shape(J_str))) !This will form a 'cap' of +1, cf. fig. 4 in Andrea's paper.
 !    integer,dimension(3, 3) :: J_str = transpose(reshape([0, 35, 15, 35, 0, 35, 15, 35, 0], shape(J_str))) !This is the 'strong repulsion' in Andrea's paper. It kinda works but I need much more energy..

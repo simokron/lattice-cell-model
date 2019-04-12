@@ -9,28 +9,59 @@ set(groot, 'defaultTextInterpreter','latex');
 set(groot, 'defaultLegendInterpreter','latex');
 
 %prefix = '';
-%prefix = 'automatedRun/1024/';
+%prefix = 'automatedRun/512/';
 %prefix = 'debug/';
 %prefix = 'J_str/';
 prefix = 'PBCvsFBC/';
 %prefix = 'solventDistribution/';
 %prefix = 'topView/';
 
-folder = 'lambda_4-L_256-J_0.0000_1.0000_2.0000-numIters_2-22-initialDist_60_20_20-FBC';
-directory = [prefix folder];
+%folder = 'lambda_4-L_256-J_0.0000_1.0000_2.0000-numIters_2-22-initialDist_60_20_20-FBC';
 
-skipFrames = 3;
+skipFrames = 1;
 evapFront = 0.35;
 polDeg = 5;
 lateralView = false;
-timeDep = true; %Shows the time dependence after completion (and exports if export = true).
+timeDep = true; saveMat = true; %Shows the time dependence after completion (and exports if export = true).
 logLog = true;
 
 F = 'pdf'; %pdf or png!
 export = true; %Turns on the frame export! For GIF exporting, use exporGIF below. DO NOT USE BOTH!
-fontSize = 14; % 14 for 0.5\linewidth; 21 for 0.33\linewidth (for 1:1 scale - try 18 if it's too large)
+fontSize = 18; % 14 for 0.5\linewidth; 21 for 0.33\linewidth (for 1:1 scale - try 18 if it's too large)
 exportGIF = false;
 pauseTime = 0.2; %The time between each frame in the GIF.
+
+if exist('folder') == 0
+    % Get a list of all files and folders in this folder.
+    files = dir(prefix);
+    % Get a logical vector that tells which is a directory.
+    dirFlags = [files.isdir];
+    % Extract only those that are directories and remove '.' and '..'.
+    subFolders = files(dirFlags);
+    for k = 1 : length(subFolders)
+        x(k) = sum(subFolders(k).name ~= '.') ~= 0;
+    end
+    subFolders = subFolders(x~=0);
+    % Determine maxmum lenght.
+    leng = [];
+    for k = 1 : length(subFolders)
+        leng = [leng size(subFolders(k).name,2)];
+    end
+    maxLeng = max(leng);
+    % Sort by date modified.
+    x = [1:length(subFolders)];
+    [sortedDates order] = sort([subFolders(x).datenum],'Descend');
+    % Print folder names to command window.
+    for k = 1 : length(subFolders)
+        fprintf('Folder #%d = %s%s', k, subFolders(order(k)).name, blanks(maxLeng-leng(order(k))));
+        fprintf(['\tModified = ', char(datetime(sortedDates(k),'ConvertFrom','datenum','Format','dd/MM'' ''HH'':''mm')),'\n'])
+    end
+    prompt='\nPlease select a folder...\n';
+    x = input(prompt);
+    folder = subFolders(order(x)).name;
+    clc;
+end
+directory = [prefix folder];
 
 if exportGIF == true
     fprintf('Exporting frames as gif...\n')
@@ -118,11 +149,13 @@ for n = 1:skipFrames:b
         
         fun = @(x)polyval(f,x)-evapFront; rootExists = false;
         if fun(X(1)) < 0 && fun(X(end-1)) > 0
-            x0(n) = fzero(fun,X([1,end-1])); rootExists = true;
+            x0(n) = fzero(fun,X([1,end-1])); rootExists = true; x0Exp(n) = x0(n);
             MCS(n) = numIters*(n-1)/(size(frame,1)*size(frame,2));
         elseif fun(X(end-1)) < 0 && fun(X(1)) > 0
-            x0(n) = fzero(fun,X([1,end-1])); rootExists = true;
+            x0(n) = fzero(fun,X([1,end-1])); rootExists = true; x0Exp(n) = x0(n);
             MCS(n) = numIters*(n-1)/(size(frame,1)*size(frame,2));
+        else
+            x0Exp(n) = 0;
         end
     end
     
@@ -252,6 +285,10 @@ if exportGIF == true
     imwrite(imind,cm,filename,'gif','WriteMode','append','DelayTime',5);
 end
 
+if timeDep == true && saveMat == true
+    save('x0.mat','x0Exp');
+end
+
 %%
 if timeDep == true && lateralView == false
     cutoff = 12;
@@ -325,7 +362,7 @@ if timeDep == true && lateralView == false
         sf = ['Fit: $y = ' num2str(round(exp(coeffs(2)),2)) '\cdot x^{' num2str(round(coeffs(1),2)) '}$'];
         
         if cutoff > 0
-           sf2 = ['Fit: $y = ' num2str(round(exp(coeffs2(2)),2)) '\cdot x^{' num2str(round(coeffs2(1),2)) '}$']; 
+            sf2 = ['Fit: $y = ' num2str(round(exp(coeffs2(2)),2)) '\cdot x^{' num2str(round(coeffs2(1),2)) '}$'];
         end
         
         xlabel('MCS $[\ln]$')

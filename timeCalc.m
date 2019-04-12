@@ -12,11 +12,58 @@ set(groot, 'defaultLegendInterpreter','latex');
 %prefix = 'automatedRun/1024/';
 %prefix = 'debug/';
 %prefix = 'J_str/';
-prefix = 'PBCvsFBC/';
+%prefix = 'PBCvsFBC/';
 %prefix = 'solventDistribution/';
-%prefix = 'topView/';
+prefix = 'topView/';
 
-folder = 'lambda_4-L_256-J_0.0000_1.0000_2.0000-numIters_2-22-initialDist_60_20_20-FBC';
+%folder = 'lambda_4-L_256-J_0.0000_1.0000_0.0000-numIters_2-22-initialDist_80_10_10-FBC';
+
+cellVisualisation = true; cD = 16; %cD is the colour-depth (8 for 8 bit, 12 for 12 bit etc).
+linInt = false; mag = 20; %Applies linear interpolation to the frames; mag is the magnification (e.g. 20 times).
+gridOn = false; %will be disabled if linInt = true.
+
+FourierTransform = false; %disables gridOn an shows the fft image.
+FTMap = parula(2^cD);
+
+f = 'pdf'; %pdf or png!
+export = false; %Turns on the frame export! For GIF exporting, use exporGIF below. DO NOT USE BOTH!
+gcaOnly = false;
+exportGIF = false;
+pauseTime = 0.1; %The time between each frame in the GIF.
+
+sequence = false; %true for whole sequence (always true for exports).
+once = false; %false for currently running simulations.
+
+if exist('folder') == 0
+    % Get a list of all files and folders in this folder.
+    files = dir(prefix);
+    % Get a logical vector that tells which is a directory.
+    dirFlags = [files.isdir];
+    % Extract only those that are directories and remove '.' and '..'.
+    subFolders = files(dirFlags);
+    for k = 1 : length(subFolders)
+        x(k) = sum(subFolders(k).name ~= '.') ~= 0;
+    end
+    subFolders = subFolders(x~=0);
+    % Determine maxmum lenght.
+    leng = [];
+    for k = 1 : length(subFolders)
+        leng = [leng size(subFolders(k).name,2)];
+    end
+    maxLeng = max(leng);
+    % Sort by date modified.
+    x = [1:length(subFolders)];
+    [sortedDates order] = sort([subFolders(x).datenum],'Descend');
+    % Print folder names to command window.
+    for k = 1 : length(subFolders)
+        fprintf('Folder #%d = %s%s', k, subFolders(order(k)).name, blanks(maxLeng-leng(order(k))));
+        fprintf(['\tModified = ', char(datetime(sortedDates(k),'ConvertFrom','datenum','Format','dd/MM'' ''HH'':''mm')),'\n'])
+    end
+    prompt='\nPlease select a folder...\n';
+    x = input(prompt);
+    folder = subFolders(order(x)).name;
+    clc;
+end
 directory = [prefix folder];
 
 cutoffConc = 0.1;

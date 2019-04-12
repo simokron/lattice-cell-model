@@ -9,25 +9,26 @@ set(groot, 'defaultTextInterpreter','latex');
 set(groot, 'defaultLegendInterpreter','latex');
 
 %prefix = '';
-%prefix = 'automatedRun/1024/';
+%prefix = 'automatedRun/512/';
 %prefix = 'debug/';
 %prefix = 'J_str/';
-%prefix = 'PBCvsFBC/';
-prefix = 'solventDistribution/';
+prefix = 'PBCvsFBC/';
+%prefix = 'solventDistribution/';
 %prefix = 'topView/';
 
-folder = 'lambda_4-L_256-J_0.0000_1.0000_0.0000-numIters_2-22-initialDist_80_10_10-FBC';
-directory = [prefix folder];
+%folder = 'lambda_4-L_256-J_0.0000_1.0000_0.0000-numIters_2-22-initialDist_80_10_10-FBC';
 
 cellVisualisation = true; cD = 16; %cD is the colour-depth (8 for 8 bit, 12 for 12 bit etc).
 linInt = false; mag = 20; %Applies linear interpolation to the frames; mag is the magnification (e.g. 20 times).
 gridOn = false; %will be disabled if linInt = true.
+skipFrames = 1;
 
-FourierTransform = false; %disables gridOn an shows the fft image.
+FourierTransform = true; %disables gridOn an shows the fft image.
+radialDist = false; criticalRegion = true; critUp = 4; critLow = 0;
 FTMap = parula(2^cD);
 
-f = 'pdf'; %pdf or png!
-export = false; %Turns on the frame export! For GIF exporting, use exporGIF below. DO NOT USE BOTH!
+f = 'png'; %pdf or png!
+export = true; %Turns on the frame export! For GIF exporting, use exporGIF below. DO NOT USE BOTH!
 gcaOnly = false;
 exportGIF = false;
 pauseTime = 0.1; %The time between each frame in the GIF.
@@ -35,11 +36,37 @@ pauseTime = 0.1; %The time between each frame in the GIF.
 sequence = true; %true for whole sequence (always true for exports).
 once = false; %false for currently running simulations.
 
-if exportGIF == true
-    skipFrames = 1;
-else
-    skipFrames = 1;
+if exist('folder') == 0
+    % Get a list of all files and folders in this folder.
+    files = dir(prefix);
+    % Get a logical vector that tells which is a directory.
+    dirFlags = [files.isdir];
+    % Extract only those that are directories and remove '.' and '..'.
+    subFolders = files(dirFlags);
+    for k = 1 : length(subFolders)
+        x(k) = sum(subFolders(k).name ~= '.') ~= 0;
+    end
+    subFolders = subFolders(x~=0);
+    % Determine maxmum lenght.
+    leng = [];
+    for k = 1 : length(subFolders)
+        leng = [leng size(subFolders(k).name,2)];
+    end
+    maxLeng = max(leng);
+    % Sort by date modified.
+    x = [1:length(subFolders)];
+    [sortedDates order] = sort([subFolders(x).datenum],'Descend');
+    % Print folder names to command window.
+    for k = 1 : length(subFolders)
+        fprintf('Folder #%d = %s%s', k, subFolders(order(k)).name, blanks(maxLeng-leng(order(k))));
+        fprintf(['\tModified = ', char(datetime(sortedDates(k),'ConvertFrom','datenum','Format','dd/MM'' ''HH'':''mm')),'\n'])
+    end
+    prompt='\nPlease select a folder...\n';
+    x = input(prompt);
+    folder = subFolders(order(x)).name;
+    clc;
 end
+directory = [prefix folder];
 
 %The dimensions in pixels of the png/GIF. Note that the height should be increased to account for the title text.
 height = 838;
@@ -64,6 +91,12 @@ if b == 0
     return;
 end
 
+if export == true && exportGIF == true
+    fprintf('Pick either "export" or "exportGIF", you pillock!\n')
+    fprintf('Aborting!\n')
+    return;
+end
+
 T = struct2table(a);
 sortedT = sortrows(T, 'date');
 sortedA = table2struct(sortedT);
@@ -79,6 +112,11 @@ fprintf(['numFrames = ' num2str(b) '\n'])
 
 if export == true
     clf;
+end
+
+if criticalRegion == true
+    load('x0.mat','x0Exp');
+    x0 = x0Exp;
 end
 
 go = true; tempPause = true;
@@ -104,8 +142,8 @@ while go
         frame = importdata([directory '/frame-' num2str(n) '.dat']);
         if(size(frame,1) ~= size(frame,2))
             break;
-        end 
-            
+        end
+        
         c0 = 1 - nnz(frame)/numel(frame);
         MCS = numIters*(n-1)/(size(frame,1)*size(frame,2));
         
@@ -166,7 +204,6 @@ while go
             maxv = 1;
             diff = round(1+(ncol-1)*(cDiff-minv)/(maxv-minv));
             diffRGB = ind2rgb(diff,diffMap);
-            
         end
         
         if cellVisualisation ~= true
@@ -187,13 +224,6 @@ while go
             % Correct the saturation of the merged images.
             HSVimSat = HSVim(:, :, 2);
             HSVSolvSat = HSVSolv(:, :, 3);
-            %HSVimSat(HSVimSat <= 0) = eps;
-            %HSVimSat = HSVimSat .* (HSVSolv(:,:,3)./HSVimSat);
-            %HSVimSat = HSVimSat + 0.9*cZero_cell*HSVSolv(:,:,3);
-            %HSVimSat = HSVimSat + 0.5*HSVSolv(:,:,3);
-            %HSVimSat = HSVimSat + 0.25*HSVSolv(:,:,3);
-            %HSVimSat = HSVSolv(:,:,3);
-            %HSVimSat = HSVimSat;
             
             HSVimSat = HSVSolvSat;
             HSVim(:, :, 2) = HSVimSat;
@@ -211,23 +241,87 @@ while go
                 imTest = F({xq,yq,zq}); % Apply the interpolation to the data
                 
                 gridOn = false;
-                
-                if FourierTransform == true
-                    colormap(FTMap);
-                    Y = fftshift(fft2(imTest(:,[1:size(imTest,1)])));
-                    imagesc(abs(Y));
-                else
-                     imagesc(imTest);
-                end
-                
+                imagesc(imTest);
             else
                 if FourierTransform == true
                     colormap(FTMap);
-                    Y = fftshift(fft2(im(:,[1:size(im,1)])));
-                    imagesc(abs(Y));
+                    Y = fftshift(fft2(im([1:size(im,1)],:,1))) + fftshift(fft2(im([1:size(im,1)],:,2))) + fftshift(fft2(im([1:size(im,1)],:,3)));
+                    if criticalRegion == true
+                        if x0(n) > 0
+                            temp = sort(unique([floor(x0(n))-critLow:floor(x0(n)) floor(x0(n)):floor(x0(n))+critUp])); temp = temp(temp>0); temp = temp(temp<size(im,1));
+                            YTemp = fftshift(fft2(im([temp],:,1))) + fftshift(fft2(im([temp],:,2))) + fftshift(fft2(im([temp],:,3)));
+                            %YTemp = fft2(im([temp],:,1)) + fft2(im([temp],:,2)) + fft2(im([temp],:,3));
+                            YTemp = abs(YTemp);
+                        end
+                    else
+                        Y = fftshift(fft2(im([1:size(im,1)],:,1))) + fftshift(fft2(im([1:size(im,1)],:,2))) + fftshift(fft2(im([1:size(im,1)],:,3)));
+                        YTemp = abs(Y);
+                    end
                     gridOn = false;
+                    if radialDist == true && exist('YTemp') == 1
+                        if criticalRegion ~= true
+                            r = [0:1:size(YTemp,1)/2];
+                            rAvg = radialAverage(YTemp, size(YTemp,1)/2+1, size(YTemp,1)/2+1, r);
+                            %[pks,locs] = findpeaks(rAvg(1:8),r(1:8)); % Find peaks within radius 8.
+                            [pks,locs] = findpeaks(rAvg(1:end),r(1:end)); % Find peaks.
+                        else
+                            [maxValue, linearIndexesOfMaxes] = max(YTemp(:));
+                            [rowsOfMaxes colsOfMaxes] = find(YTemp == maxValue);
+                            xData = YTemp(rowsOfMaxes,sort(unique([colsOfMaxes:colsOfMaxes+12])));
+                            x = [1:size(xData,2)]-1;
+                            [pks,locs] = findpeaks(xData,x); % Find peaks along critical x-axis.
+                        end
+                        if isempty(locs) ~= 1 && x0(n) ~= 0% Save largest peak
+                            [maxValue, linearIndexesOfMaxes] = max(pks);
+                            rowsOfMaxes = find(pks == maxValue);
+                            nSave(n) = n;
+                            locsSave(n) = locs(rowsOfMaxes);
+                        end
+                        clf;
+                        hold on
+                        if criticalRegion ~= true
+                            plot(r,rAvg,'.-k', 'MarkerSize',20);
+                        else
+                            plot(x,xData,'.-k', 'MarkerSize',20);
+                        end
+                        xPrime = sort([1:(L/lambda)/8:L/lambda]-1);
+                        xPrime = xPrime(xPrime ~= 0);
+                        xticks(xPrime);
+                        if size(pks,2) ~= 0 && n > 1
+                            %                             if size(pks,2) >= 2
+                            %                                 plot([locs(1) locs(1)],[0 pks(1)], '--', 'Color', [0 0 0] + 0.5) % x = peak 1
+                            %                                 plot([locs(2) locs(2)],[0 pks(2)], '--', 'Color', [0 0 0] + 0.5) % x = peak 2
+                            %                                 plot(locs(1:2),pks(1:2),'.m', 'MarkerSize',20);
+                            %                                 xticks(sort(unique([xticks locs(1:2)])))
+                            %                             else
+                            %                                 plot([locs(1) locs(1)],[0 pks(1)], '--', 'Color', [0 0 0] + 0.5) % x = peak 1
+                            %                                 plot(locs(1),pks(1),'.m', 'MarkerSize',20);
+                            %                                 xticks(sort(unique([xticks locs(1)])))
+                            %                             end
+                            
+                            [maxValue, linearIndexesOfMaxes] = max(pks);
+                            rowsOfMaxes = find(pks == maxValue);
+                            plot([locs(rowsOfMaxes) locs(rowsOfMaxes)],[0 maxValue], '--', 'Color', [0 0 0] + 0.5) % dominatin peak
+                            plot(locs(rowsOfMaxes),maxValue,'.m', 'MarkerSize',20);
+                            xticks(sort(unique([xticks locs(rowsOfMaxes)])))
+                        end
+                        hold off
+                    elseif exist('YTemp') == 1
+                        imagesc(YTemp);
+                    end
                 else
                     imagesc(im);
+                    if criticalRegion == true && x0(n) ~= 0
+                        hold on;
+                        %h = plot([0,L], [floor(x0(n)),floor(x0(n))], '-k', 'LineWidth',4); h.Color(4)=0.5;
+                        h = rectangle('Position',[0 floor(x0(n))-critLow-1/2 L/lambda+1 critLow+critUp+1], 'FaceColor', 'b'); h.FaceColor(4)=0.3; h.EdgeColor(4)=0.0;
+                        if export == true && sum(f == 'pdf') == 3
+                            h = rectangle('Position',[0 floor(x0(n))-1/2 L/lambda+1 1], 'FaceColor', 'b'); h.FaceColor(4)=0.305; h.EdgeColor(4)=0.0;
+                        else
+                            h = rectangle('Position',[0 floor(x0(n))-1/2 L/lambda+1 1], 'FaceColor', 'b'); h.FaceColor(4)=0.3; h.EdgeColor(4)=0.0;
+                        end
+                        hold off
+                    end
                     %imagesc(downRGB);
                     %imagesc(upRGB);
                     %imagesc(diffRGB); %BLACK AND WHITE
@@ -238,14 +332,30 @@ while go
                 
             end
         else
-            if FourierTransform == true
-                colormap(FTMap);
-                Y = fftshift(fft2(frame(:,[1:size(frame,1)])));
-                imagesc(abs(Y));
-            else
-                colormap(mymap)
-                imagesc(frame);
-            end
+            %                         if FourierTransform == true
+            %                             colormap(FTMap);
+            %                             Y = fftshift(fft2(frame([1:size(frame,1)],:,1))) + fftshift(fft2(frame([1:size(frame,1)],:,2))) + fftshift(fft2(frame([1:size(frame,1)],:,3)));
+            %                             YTemp = abs(Y);
+            %                             if radialDist == true
+            %                                 r = [1:1:size(YTemp,2)/2];
+            %                                 rAvg = radialAverage(YTemp, size(YTemp,2)/2, size(YTemp,2)/2, r);
+            %                                 [pks,locs] = findpeaks(rAvg(1:8),[1:8]);
+            %                                 clf;
+            %                                 hold on
+            %                                 plot(r,rAvg,'.-k', 'MarkerSize',20);
+            %                                 if size(pks,2) ~= 0
+            %                                     plot([locs(1) locs(1)],[0 pks(1)], '--', 'Color', [0 0 0] + 0.5) % x = peak
+            %                                     plot(locs(1),pks(1),'.m', 'MarkerSize',20);
+            %                                 end
+            %                                 hold off
+            %                             else
+            %                                 imagesc(YTemp);
+            %                                 gridOn = false;
+            %                             end
+            %                         else
+            colormap(mymap)
+            imagesc(frame);
+            %                         end
         end
         
         set(gca,'FontSize',14)
@@ -260,16 +370,75 @@ while go
             end
             grid on
         end
-        ax = gca;
-        ax.GridAlpha = 0.8;
-        ax.LineWidth = 1.0;
-        ax.YAxis.Visible = 'off';
-        ax.XAxis.Visible = 'off';
-        set(gcf,'Units','pixels');
-        set(gcf,'Position', [0 0 width height])
-        set(gca,'Position', [0 0 1 width/height])
-        %set(gca,'visible','off');
-        %set(findall(gca, 'type', 'text'), 'visible', 'on')
+        if FourierTransform == true && radialDist == true && exist('r') == 1
+            xlim([min(r), max(r)]);
+            ylim([0, 2000]*(4/lambda));
+            %ylim([0, 5000]);
+            yticks([])
+            %             xticks(sort([2 1:(L/lambda)/8:L/lambda]-1))
+            %             if size(pks,2) ~= 0 && n > 1
+            %                 xticks(sort(unique([xticks locs(1)])))
+            %             end
+            
+            if export == true
+                set(gca,'FontSize',18) % FOR EXPORTING!!
+                title('')
+                xlim([min(r), max(r)/2]);
+            end
+            
+            set(gcf,'Units','pixels');
+            set(gcf,'Position', [0 0 550 400]*1.5)
+            set(gcf,'color','w');
+            xlabel('$r$')
+            ylabel('Counts (arb.\ units)')
+            tightfig;
+        elseif FourierTransform == true && criticalRegion == true
+            set(gcf,'Units','pixels');
+            if n == 1
+                if radialDist == false
+                    ax = gca;
+                    ax.YAxis.Visible = 'off';
+                    ax.XAxis.Visible = 'off';
+                    set(gcf,'Position', [0 0 width width*((critUp + critLow + 1)/size(Y,1))])
+                    set(gca,'Position', [0 0 1 1])
+                else
+                    yticks([])
+                    set(gcf,'Position', [0 0 550 400]*1.5)
+                    set(gcf,'color','w');
+                    xlabel('$x$')
+                    ylabel('Counts (arb.\ untits)')
+                    tightfig;
+                end
+            end
+            if exist('Y') == 1 && exist('YTemp') == 1
+                if radialDist == false
+                    ax = gca;
+                    ax.YAxis.Visible = 'off';
+                    ax.XAxis.Visible = 'off';
+                    set(gcf,'Position', [0 0 width width*(size(YTemp,1)/size(Y,1))])
+                    set(gca,'Position', [0 0 1 1])
+                else
+                    xlim([min(x), max(x)]);
+                    ylim([0, 300]);
+                    yticks([])
+                    set(gcf,'Units','pixels');
+                    set(gcf,'Position', [0 0 550 400]*1.5)
+                    set(gcf,'color','w');
+                    xlabel('$x$')
+                    ylabel('Counts (arb.\ untits)')
+                    tightfig;
+                end
+            end
+        else
+            ax = gca;
+            ax.GridAlpha = 0.8;
+            ax.LineWidth = 1.0;
+            ax.YAxis.Visible = 'off';
+            ax.XAxis.Visible = 'off';
+            set(gcf,'Units','pixels');
+            set(gcf,'Position', [0 0 width height])
+            set(gca,'Position', [0 0 1 width/height])
+        end
         if n == 1
             pause(1)
         end
@@ -278,18 +447,29 @@ while go
                 set(gcf,'Position', [0 0 800 800])
                 set(gca,'Position', [0 0 1 1])
             elseif sum(f == 'pdf') == 3
-                set(gcf,'Position', [0 0 300 300])
-                if gridOn == true
-                    set(gca,'Position', [0.003 0.005 0.99 0.99])
+                if FourierTransform == true
+                    if criticalRegion == true && radialDist == true
+                        set(gcf,'Units','pixels');
+                        set(gcf,'Position', [0 0 550 400])
+                        set(gcf,'color','w');
+                        tightfig;
+                    else
+                        set(gca,'Position', [0 0 1 1])
+                    end
                 else
-                    set(gca,'Position', [0 0 1 1])
+                    set(gcf,'Position', [0 0 300 300])
+                    if gridOn == true
+                        set(gca,'Position', [0.003 0.005 0.99 0.99])
+                    else
+                        set(gca,'Position', [0 0 1 1])
+                    end
                 end
             end
             for k = 1:9
                 if c0 <= 0.1
                     k = 0.1;
                 end
-                if round(c0,2) == k/10 && k/10 < current
+                if round(c0,2) == k/10 && k/10 < current || n == b
                     current = k/10;
                     fig = gcf;
                     filename = sprintf([directory '_MCS_' num2str(round(MCS,0)) '_c0_0%d.' f],str2num(strrep(num2str(round(c0,2)),'.','')));
@@ -349,6 +529,53 @@ while go
         if numPause > 180
             go = false;
             break;
+        end
+    end
+end
+
+%% Plotting
+if FourierTransform == true && radialDist == true
+    clf;
+    nSave = nSave(nSave ~= 0); % Strip zeros.
+    locsSave = locsSave(nSave ~= 0); % Strip zeros.
+    
+    plot(nSave,locsSave,'.k', 'MarkerSize',20)
+    
+    % Cosmetic plot stuff.
+    set(gca,'FontSize',14)
+    xlabel('MCS (arb.\ units)')
+    if criticalRegion ~= true
+        ylabel('$r$')
+    else
+        ylabel('$x$')
+    end
+    box off
+    
+    xlim([min(nSave), max(nSave)]);
+    ylim([1, 8]);
+    yticks([1:8])
+    xticks([])
+    %     yticklabels({})
+    %     xticklabels({})
+    
+    set(gcf,'Units','pixels');
+    set(gcf,'Position', [0 0 550 400])
+    set(gcf,'color','w');
+    tightfig;
+    
+    if export == true
+        fig = gcf;
+        filename = sprintf([directory '-domainCoarsening.' f]);
+        if sum(f == 'png') == 3
+            frame = getframe(fig);
+            im = frame2im(frame);
+            [imind,cm] = rgb2ind(im,256);
+            imwrite(imind,cm,filename,f);
+        else
+            set(fig,'Units','Inches');
+            pos = get(fig,'Position');
+            set(fig,'PaperPositionMode','Auto','PaperUnits','Inches','PaperSize',[pos(3), pos(4)])
+            print(fig,filename,'-dpdf','-r0')
         end
     end
 end

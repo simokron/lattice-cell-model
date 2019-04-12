@@ -35,5 +35,6 @@
 *.gif
 *.png
 *.pdf
+*.mat
 *.fuse_*
 *.m~
