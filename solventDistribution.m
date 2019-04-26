@@ -26,7 +26,7 @@ timeDep = true; saveMat = true; %Shows the time dependence after completion (and
 logLog = true;
 
 F = 'pdf'; %pdf or png!
-export = true; %Turns on the frame export! For GIF exporting, use exporGIF below. DO NOT USE BOTH!
+export = false; %Turns on the frame export! For GIF exporting, use exporGIF below. DO NOT USE BOTH!
 fontSize = 18; % 14 for 0.5\linewidth; 21 for 0.33\linewidth (for 1:1 scale - try 18 if it's too large)
 exportGIF = false;
 pauseTime = 0.2; %The time between each frame in the GIF.

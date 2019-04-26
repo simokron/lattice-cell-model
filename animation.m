@@ -12,23 +12,39 @@ set(groot, 'defaultLegendInterpreter','latex');
 %prefix = 'automatedRun/512/';
 %prefix = 'debug/';
 %prefix = 'J_str/';
-prefix = 'PBCvsFBC/';
+%prefix = 'PBCvsFBC/';
 %prefix = 'solventDistribution/';
-%prefix = 'topView/';
+prefix = 'topView/';
 
 %folder = 'lambda_4-L_256-J_0.0000_1.0000_0.0000-numIters_2-22-initialDist_80_10_10-FBC';
 
-cellVisualisation = true; cD = 16; %cD is the colour-depth (8 for 8 bit, 12 for 12 bit etc).
+cellVisualisation = false; cD = 16; %cD is the colour-depth (8 for 8 bit, 12 for 12 bit etc).
 linInt = false; mag = 20; %Applies linear interpolation to the frames; mag is the magnification (e.g. 20 times).
 gridOn = false; %will be disabled if linInt = true.
-skipFrames = 1;
+skipFrames = 10;
 
 FourierTransform = true; %disables gridOn an shows the fft image.
-radialDist = false; criticalRegion = true; critUp = 4; critLow = 0;
-FTMap = parula(2^cD);
+radialDist = true; criticalRegion = false; critUp = 8; critLow = 0;
+%FTMap = parula(2^cD);
+%FTMap = pink(2^cD);
+%FTMap = jet(2^cD);
 
-f = 'png'; %pdf or png!
-export = true; %Turns on the frame export! For GIF exporting, use exporGIF below. DO NOT USE BOTH!
+  %cMap = parula(2^cD);
+  %cMap = pink(2^cD);
+  cMap = jet(2^cD);
+  dataMax = 2^4;
+  dataMin = 2^1;
+  centerPoint = 1;
+  scalingIntensity = 5;
+    y = 1:length(cMap); 
+  y = y - (centerPoint-dataMin)*length(y)/(dataMax-dataMin);
+  y = scalingIntensity * y/max(abs(y));
+   y = sign(y).* exp(abs(y));
+  y = y - min(y); y = y*511/max(y)+1; 
+  FTMap = interp1(y, cMap, 1:512);
+
+f = 'pdf'; %pdf or png!
+export = false; %Turns on the frame export! For GIF exporting, use exporGIF below. DO NOT USE BOTH!
 gcaOnly = false;
 exportGIF = false;
 pauseTime = 0.1; %The time between each frame in the GIF.
@@ -332,30 +348,32 @@ while go
                 
             end
         else
-            %                         if FourierTransform == true
-            %                             colormap(FTMap);
-            %                             Y = fftshift(fft2(frame([1:size(frame,1)],:,1))) + fftshift(fft2(frame([1:size(frame,1)],:,2))) + fftshift(fft2(frame([1:size(frame,1)],:,3)));
-            %                             YTemp = abs(Y);
-            %                             if radialDist == true
-            %                                 r = [1:1:size(YTemp,2)/2];
-            %                                 rAvg = radialAverage(YTemp, size(YTemp,2)/2, size(YTemp,2)/2, r);
-            %                                 [pks,locs] = findpeaks(rAvg(1:8),[1:8]);
-            %                                 clf;
-            %                                 hold on
-            %                                 plot(r,rAvg,'.-k', 'MarkerSize',20);
-            %                                 if size(pks,2) ~= 0
-            %                                     plot([locs(1) locs(1)],[0 pks(1)], '--', 'Color', [0 0 0] + 0.5) % x = peak
-            %                                     plot(locs(1),pks(1),'.m', 'MarkerSize',20);
-            %                                 end
-            %                                 hold off
-            %                             else
-            %                                 imagesc(YTemp);
-            %                                 gridOn = false;
-            %                             end
-            %                         else
-            colormap(mymap)
-            imagesc(frame);
-            %                         end
+            if FourierTransform == true
+                colormap(FTMap);
+                Y = fftshift(fft2(frame([1:size(frame,1)],:)));
+                YTemp = abs(Y);
+%                                 if radialDist == true
+%                                     r = [1:1:size(YTemp,2)/2];
+%                                     rAvg = radialAverage(YTemp, size(YTemp,2)/2, size(YTemp,2)/2, r);
+%                                     [pks,locs] = findpeaks(rAvg(1:8),[1:8]);
+%                                     clf;
+%                                     hold on
+%                                     plot(r,rAvg,'.-k', 'MarkerSize',20);
+%                                     if size(pks,2) ~= 0
+%                                         plot([locs(1) locs(1)],[0 pks(1)], '--', 'Color', [0 0 0] + 0.5) % x = peak
+%                                         plot(locs(1),pks(1),'.m', 'MarkerSize',20);
+%                                     end
+%                                     hold off
+%                                 else
+%                                     imagesc(YTemp);
+%                                     gridOn = false;
+%                                 end
+                imagesc(YTemp);
+                gridOn = false;
+            else
+                colormap(mymap)
+                imagesc(frame);
+            end
         end
         
         set(gca,'FontSize',14)
@@ -453,7 +471,10 @@ while go
                         set(gcf,'Position', [0 0 550 400])
                         set(gcf,'color','w');
                         tightfig;
+                    elseif criticalRegion == true && radialDist == false
+                        set(gca,'Position', [0 0 1 1])
                     else
+                        set(gcf,'Position', [0 0 300 300])
                         set(gca,'Position', [0 0 1 1])
                     end
                 else
