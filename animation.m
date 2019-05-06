@@ -32,12 +32,12 @@ skipFrames = 1; %The number of .dat files to skip for each frame rendered in MAT
 fontSize = 14; % 14 for 0.5\linewidth; 21 for 0.33\linewidth (for 1:1 scale - try 18 if it's too large)
 
 % Some Fourier transform settings.
-FourierTransform = true; stretchCS = true; FTMap = jet(2^cD); %disables gridOn an shows the fft2 image; stretchCS applies a stretched colour-space of type FTMap;
+FourierTransform = false; stretchCS = true; FTMap = jet(2^cD); %disables gridOn an shows the fft2 image; stretchCS applies a stretched colour-space of type FTMap;
 radialDist = false; %Shows the radial distribution of the fft2 data.
-criticalRegion = false; critUp = 0; critDown = 8; %If ciritcalRegion is combined with radialDist, it shows the line profile.. otherwise it overlays the image (if on its own) or shows the fft critical region (if combined with FourierTransform). The critical region is specified using critUp and critLow (in terms of # of cells).
+criticalRegion = true; critUp = 0; critDown = 0; %If ciritcalRegion is combined with radialDist, it shows the line profile.. otherwise it overlays the image (if on its own) or shows the fft critical region (if combined with FourierTransform). The critical region is specified using critUp and critLow (in terms of # of cells).
 
 % Some settings for file exporting.
-export = false; f = 'pdf'; %Turns on the frame export of type 'f' - supports pdf, png or gif!
+export = true; f = 'pdf'; %Turns on the frame export of type 'f' - supports pdf, png or gif!
 pauseTime = 0.1; %The time between each frame in the GIF.
 height = 838; width = 800; %The dimensions in pixels of the png/GIF. Note that the height should be increased to account for the title text. The PDFs export with a (preprogrammed) small size for space-conserving reasons.
 

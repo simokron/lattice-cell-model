@@ -12,20 +12,22 @@ module constants
     !sigma is the spin matrix; numSpins is a tensor of rank 3 which stores the number of spins of each spices per cell.
     integer,parameter :: L = 128, lambda = 4
 !    character(128) :: prefix = 'automatedRun/1024/'
-!    character(128) :: prefix = 'debug/'
+    character(128) :: prefix = 'debug/'
 !    character(128) :: prefix = 'recreation/'
-    character(128) :: prefix = 'J_str/'
+!    character(128) :: prefix = 'J_str/'
 !    character(128) :: prefix = 'PBCvsFBC/'
 !    character(128) :: prefix = 'solventDistribution/'
 !    character(128) :: prefix = 'topView/'
-    real,parameter :: beta = 0.6, p0 = 0.6, p1 = (1 - p0)/2, phi = 0, cutoffConc = 0.0
+    real,parameter :: beta = 0.6, p0 = 0.6, p1 = (1 - p0)/2, phi = 0, cutoffConc = 0.1
 !    real,parameter :: beta = 0.6, p0 = 0.6, p1 = 0.30, phi = 0.0, cutoffConc = 0.00
-    logical,parameter :: constSeed = .false., FBC = .false., topView = .false., noEvap = .true.
+    logical,parameter :: constSeed = .false., FBC = .false., topView = .false., noEvap = .false.
     integer :: sigma(L,L), numSpins(L/lambda,L/lambda,1:3)
     integer, allocatable :: numIters
 
 !    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*[0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !J_ORIGINAL SCALED
-    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*[0, 1, 2, 1, 0, 1, 2, 1, 0], shape(J_str))) !2
+!    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*[0, 1, 2, 1, 0, 1, 2, 1, 0], shape(J_str))) !2
+
+    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*[0, 2, 12, 2, 0, 2, 12, 2, 0], shape(J_str))) !J_ORIGINAL SCALED
 
 !    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*[0, 1, 0, 1, 0, 1, 0, 1, 0], shape(J_str))) !+1 and -1 are functionally the same.
 
@@ -587,11 +589,12 @@ contains
             spin_p = sigma(j_s_p, i_s_p) !Now we have the actual spin at (i_s_p,j_s_p), which we store in spin_p.
 
             !-Evaporation-------------------------------------------------------
-            if(topView .eqv. .false. .and. noEvap .eqv. .false.) then
-                print *, farts
-                if(j_c == 1 .and. spin == 0 .and. t == 1) then
-                    call evap(j_s, i_s, j_c, i_c, sigma, numSpins)
-                    GO TO 10
+            if(topView .eqv. .false.) then
+                if(noEvap .eqv. .false.) then
+                    if(j_c == 1 .and. spin == 0 .and. t == 1) then
+                        call evap(j_s, i_s, j_c, i_c, sigma, numSpins)
+                        GO TO 10
+                    endif
                 endif
             elseif(topView .eqv. .true.) then
                 if(spin == 0) then
