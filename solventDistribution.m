@@ -12,6 +12,7 @@ set(groot, 'defaultLegendInterpreter','latex');
 %prefix = '';
 prefix = 'automatedRun/512/';
 %prefix = 'debug/';
+%prefix = 'recreation/';
 %prefix = 'J_str/';
 %prefix = 'PBCvsFBC/';
 %prefix = 'solventDistribution/';

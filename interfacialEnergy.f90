@@ -14,10 +14,10 @@ module constants
     real, dimension (:,:), allocatable :: energyCells
     integer, dimension (:,:,:), allocatable :: numSpins
     character(256), allocatable :: dir
-    character(256) :: prefix = 'automatedRun/128/'
+!    character(256) :: prefix = 'automatedRun/128/'
 !    character(256) :: folder = 'lambda_2-L_128-J_0.0000_1.0000_2.0000-numIters_2-19-initialDist_60_20_20-FBC'
 !    character(256) :: folder = 'lambda_4-L_128-J_0.0000_1.0000_2.0000-numIters_2-16-initialDist_60_20_20-FBC'
-    character(256) :: folder = 'lambda_8-L_128-J_0.0000_1.0000_2.0000-numIters_2-14-initialDist_60_20_20-FBC'
+!    character(256) :: folder = 'lambda_8-L_128-J_0.0000_1.0000_2.0000-numIters_2-14-initialDist_60_20_20-FBC'
 !    character(256) :: folder = 'lambda_16-L_128-J_0.0000_1.0000_2.0000-numIters_2-12-initialDist_60_20_20-FBC'
 !    character(256) :: folder = 'lambda_32-L_128-J_0.0000_1.0000_2.0000-numIters_2-10-initialDist_60_20_20-FBC'
 
@@ -311,6 +311,6 @@ program interfacialEnergy
     close(10)
 
     energyCells = calcEnergy(sigma)
-    print *, 'H_int = ', sum(energyCells)/L**2
+    print *, 'H_int = ', sum(energyCells)/(L**2)
 
 end program interfacialEnergy

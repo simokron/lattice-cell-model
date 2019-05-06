@@ -10,16 +10,17 @@ module constants
     !beta is the reciprocal temperature; p0 is the concentration of zeroes at t = 0; p1 is the concentration of +1 (and -1 at the moment); phi is to volatility; cutoffConc is the final residual solvent concentration - set to negative number for infinite run-time.
     !To boolean constSeed uses a constant seed for the RNG (for debugging); FBC enables the free boundary conditions.
     !sigma is the spin matrix; numSpins is a tensor of rank 3 which stores the number of spins of each spices per cell.
-    integer,parameter :: L = 256, lambda = 4
+    integer,parameter :: L = 128, lambda = 4
 !    character(128) :: prefix = 'automatedRun/1024/'
-    character(128) :: prefix = 'debug/'
-!    character(128) :: prefix = 'J_str/'
+!    character(128) :: prefix = 'debug/'
+!    character(128) :: prefix = 'recreation/'
+    character(128) :: prefix = 'J_str/'
 !    character(128) :: prefix = 'PBCvsFBC/'
 !    character(128) :: prefix = 'solventDistribution/'
 !    character(128) :: prefix = 'topView/'
-    real,parameter :: beta = 0.6, p0 = 0.9, p1 = (1 - p0)/2, phi = 0, cutoffConc = 0.1
+    real,parameter :: beta = 0.6, p0 = 0.6, p1 = (1 - p0)/2, phi = 0, cutoffConc = 0.0
 !    real,parameter :: beta = 0.6, p0 = 0.6, p1 = 0.30, phi = 0.0, cutoffConc = 0.00
-    logical,parameter :: constSeed = .false., FBC = .true., topView = .false.
+    logical,parameter :: constSeed = .false., FBC = .false., topView = .false., noEvap = .true.
     integer :: sigma(L,L), numSpins(L/lambda,L/lambda,1:3)
     integer, allocatable :: numIters
 
@@ -586,12 +587,13 @@ contains
             spin_p = sigma(j_s_p, i_s_p) !Now we have the actual spin at (i_s_p,j_s_p), which we store in spin_p.
 
             !-Evaporation-------------------------------------------------------
-            if(topView .eqv. .false.) then
+            if(topView .eqv. .false. .and. noEvap .eqv. .false.) then
+                print *, farts
                 if(j_c == 1 .and. spin == 0 .and. t == 1) then
                     call evap(j_s, i_s, j_c, i_c, sigma, numSpins)
                     GO TO 10
                 endif
-            else
+            elseif(topView .eqv. .true.) then
                 if(spin == 0) then
                     call random_number(P) !Compare to a pseudo-random number between 0 and 1.
 !                    if(P < 1/(2*L)) call evap(j_s, i_s, j_c, i_c, sigma, numSpins)

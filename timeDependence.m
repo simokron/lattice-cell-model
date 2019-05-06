@@ -21,13 +21,14 @@ prefix = 'automatedRun/512/';
 global logLog fontSize export f allFiles folder
 
 % Various settings related to the visualisation of the data.
-allFiles = true;
+allFiles = false;
 logLog = true; %Shows the final graph on a loglog scale if true.
 cutoff = 12; % The number of data points to exclude near the end.
+cutoff = [15 30 30 40 30]; % The number of data points to exclude near the end in the allFiles case. Note that you need this vector to be the same length as the number of .mat files!
 fontSize = 18; % 14 for 0.5\linewidth; 21 for 0.33\linewidth (for 1:1 scale - try 18 if it's too large)
 
 % Some settings for file exporting.
-export = true; f = 'pdf'; %Turns on the frame export of type 'f' - supports pdf or png!
+export = false; f = 'pdf'; %Turns on the frame export of type 'f' - supports pdf or png!
 
 % Run the folder selector if necessary and extract the parameters from the directory name.
 if allFiles == false
@@ -54,7 +55,7 @@ for k = 1:size(datFiles,2)
     [x0, MCS] = load_x0(currentFile,2);
     [lambda, L] = findParamaters(currentFile,1);
 
-    generatePlot(L, lambda, x0, MCS, cutoff, logLog, fontSize, allFiles, k, size(datFiles,2))
+    generatePlot(L, lambda, x0, MCS, cutoff(k), logLog, fontSize, allFiles, k, size(datFiles,2))
     setDimensions
 end
 
@@ -168,9 +169,15 @@ function generatePlot(L, lambda, x0, MCS, cutoff, logLog, fontSize, allRuns, k, 
             end
             warning(ws)  % Turn them back on.
         else
-            plot(lMCS,lx0,'.', 'MarkerSize',20, 'Color', [0 0 0] + (1/maxVal)*(k-1), 'DisplayName',['$\lambda$ = ' num2str(lambda)]);
+            plot(lMCS(1:end-cutoff),lx0(1:end-cutoff),'.', 'MarkerSize',20, 'Color', [0 0 0] + (1/maxVal)*(k-1), 'DisplayName',['$\lambda$ = ' num2str(lambda)]);
+            plot(lMCS(end-cutoff+1:end),lx0(end-cutoff+1:end),'.', 'MarkerSize',20, 'Color', [0 0 1],'HandleVisibility','off');
+            %plot(X,fun(X),'-m', 'DisplayName',['Fit: $y \propto x^{' num2str(round(coeffs(1),2)) '}$']);
+            if cutoff > 0
+                plot(X2,fun2(X2),'-g', 'DisplayName',['Fit: $y \propto x^{' num2str(round(coeffs2(1),2)) '}$']);
+            end
+            %plot(lMCS,lx0,'.', 'MarkerSize',20, 'Color', [0 0 0] + (1/maxVal)*(k-1), 'DisplayName',['$\lambda$ = ' num2str(lambda)]);
             if k == maxVal
-                plot([0 2^10],0.5*[0 2^10]-0.57,'-m', 'DisplayName', 'Fickian Diffusion')
+                plot([0 2^10],0.5*[0 2^10]-0.57,'-m', 'DisplayName', 'Fickian: $y \propto x^{0.5}$')
             end
         end
 
@@ -224,10 +231,14 @@ end
 
 % This function sets the dimensions of the plot.
 function setDimensions
-    global fontSize
+    global fontSize export f
 
     set(gcf,'Units','pixels');
-    set(gcf,'Position', [0 0 550 400]*1.2)
+    if export == true && sum(f == 'pdf') == 3
+        set(gcf,'Position', [0 0 550 400])
+    else
+        set(gcf,'Position', [0 0 550 400]*1.2)
+    end
     set(gcf,'color','w');
     set(gca,'FontSize',fontSize);
     tightfig;
