@@ -10,7 +10,7 @@ module constants
     !beta is the reciprocal temperature; p0 is the concentration of zeroes at t = 0; p1 is the concentration of +1 (and -1 at the moment); phi is to volatility; cutoffConc is the final residual solvent concentration - set to negative number for infinite run-time.
     !To boolean constSeed uses a constant seed for the RNG (for debugging); FBC enables the free boundary conditions.
     !sigma is the spin matrix; numSpins is a tensor of rank 3 which stores the number of spins of each spices per cell.
-    integer,parameter :: L = 128, lambda = 8
+    integer,parameter :: L = 512, lambda = 8
 !    character(128) :: prefix = 'automatedRun/1024/'
 !    character(128) :: prefix = 'debug/'
     character(128) :: prefix = 'recreation/'
@@ -603,11 +603,11 @@ contains
                     endif
                 endif
             elseif(topView .eqv. .true.) then
-                if(spin == 0) then
-                    if(noEvap .eqv. .false.) then
+                if(noEvap .eqv. .false.) then
+                    if(spin == 0) then
                         call random_number(P) !Compare to a pseudo-random number between 0 and 1.
-    !                    if(P < 0.0002) call evap(j_s, i_s, j_c, i_c, sigma, numSpins)
-                        if(P < 0.002) call evap(j_s, i_s, j_c, i_c, sigma, numSpins)
+                        if(P < 0.0002) call evap(j_s, i_s, j_c, i_c, sigma, numSpins)
+!                        if(P < 0.002) call evap(j_s, i_s, j_c, i_c, sigma, numSpins) !DEBUG
                         GO TO 10
                     endif
                 endif
