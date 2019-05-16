@@ -22,10 +22,10 @@ prefix = 'recreation/';
 %folder = 'lambda_4-L_256-J_0.0000_1.0000_0.0000-numIters_2-22-initialDist_80_10_10-FBC';
 
 % Declare global variables
-global lambda L cellVisualisation linInt numIters mag gridOn fontSize criticalRegion export f c0 MCS n b x0 frame directory pauseTime nSave locsSave
+global lambda L cellVisualisation linInt numIters mag gridOn fontSize criticalRegion export f c0 MCS n b x0 frame directory pauseTime nSave locsSave skipFrames
 
 % Various settings related to the visualisation of the data.
-cellVisualisation = false; cD = 16; %cD is the colour-depth (8 for 8 bit, 12 for 12 bit etc).
+cellVisualisation = true; cD = 16; %cD is the colour-depth (8 for 8 bit, 12 for 12 bit etc).
 linInt = false; mag = 20; %Applies linear interpolation to the frames; mag is the magnification (e.g. 20 times).
 gridOn = false; %Overlays a grid representing the cells. Will be automatically disabled if linInt = true.
 skipFrames = 1; %The number of .dat files to skip for each frame rendered in MATALB.
@@ -34,7 +34,7 @@ fontSize = 18; % 14 for 0.5\linewidth; 21 for 0.33\linewidth (for 1:1 scale - tr
 % Some Fourier transform settings.
 FourierTransform = false; stretchCS = true; FTMap = jet(2^cD); %disables gridOn an shows the fft2 image; stretchCS applies a stretched colour-space of type FTMap;
 radialDist = true; %Shows the radial distribution of the fft2 data.
-criticalRegion = false; critUp = 0; critDown = 4; %If ciritcalRegion is combined with radialDist, it shows the line profile.. otherwise it overlays the image (if on its own) or shows the fft critical region (if combined with FourierTransform). The critical region is specified using critUp and critLow (in terms of # of cells).
+criticalRegion = false; critUp = 0; critDown = 0; %If ciritcalRegion is combined with radialDist, it shows the line profile.. otherwise it overlays the image (if on its own) or shows the fft critical region (if combined with FourierTransform). The critical region is specified using critUp and critLow (in terms of # of cells).
 
 % Some settings for file exporting.
 export = false; f = 'pdf'; %Turns on the frame export of type 'f' - supports pdf, png or gif!
@@ -285,7 +285,7 @@ end
 %% Functions
 % This function does some initial debugging to catch any obvious mistakes, such as the directory being empty.
 function [once, x0, rawMap, lowLim, go, tempPause, k] = preChecks(sequence)
-    global directory f export criticalRegion current
+    global directory f export criticalRegion current skipFrames
     a = dir([directory '/*.dat']);
     b = numel(a);
     if b == 0
@@ -334,7 +334,13 @@ function [once, x0, rawMap, lowLim, go, tempPause, k] = preChecks(sequence)
 
     % Set initial conditionals for the main loop.
     if export == true
-        fprintf(['\nWill export frames as a .' f '.\n']);
+        if skipFrames ~= 1
+            fprintf('\n')
+            warning('skipFrames has been set to 1.',class(a))
+            skipFrames = 1;
+        end
+        fprintf('\n')
+        warning(['Will export frames as .' f '.'],class(a))
     else
         fprintf('\nWill NOT export frames.\n');
     end

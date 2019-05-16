@@ -12,9 +12,9 @@ set(groot, 'defaultLegendInterpreter','latex');
 %prefix = '';
 %prefix = 'automatedRun/512/';
 %prefix = 'debug/';
-%prefix = 'recreation/';
+prefix = 'recreation/';
 %prefix = 'J_str/';
-prefix = 'PBCvsFBC/';
+%prefix = 'PBCvsFBC/';
 %prefix = 'solventDistribution/';
 %prefix = 'topView/';
 
@@ -28,13 +28,13 @@ global lambda L numIters f directory frame lateralView fontSize allSpecies timeD
 skipFrames = 3; %The number of .dat files to skip for each frame rendered in MATALB.
 evapFront = 0.35; %The 'arbitrary' critical concentration.
 polDeg = 5; %The polynomial degree of the interpolation
-lateralView = false; %Concentration per column, rather than per row. Not super useful, but it's here.
-allSpecies = true; %Shows all of the species.
+lateralView = true; %Concentration per column, rather than per row. Not super useful, but it's here.
+allSpecies = false; %Shows all of the species.
 timeDep = false; saveMat = false; %Shows the time dependence after completion (and exports if export = true); the saveMat boolean controls the exporting of the j_demix data to a matrix.
-fontSize = 18; % 14 for 0.5\linewidth; 21 for 0.33\linewidth (for 1:1 scale - try 18 if it's too large)
+fontSize = 24; % 18 for 0.5\linewidth; 24 for 0.33\linewidth (for 1:1 scale - try 18 if it's too large)
 
 % Some settings for file exporting.
-export = true; f = 'pdf'; %Turns on the frame export of type 'f' - supports pdf, png or gif!
+export = false; f = 'pdf'; %Turns on the frame export of type 'f' - supports pdf, png or gif!
 pauseTime = 0.2; %The time between each frame in the GIF.
 
 % Run the folder selector if necessary and extract the parameters from the directory name.
@@ -114,12 +114,13 @@ function preChecks
             fprintf('\n')
             warning('The .mat file already exists. It will NOT be overwritten!',class(a))
         else
-            fprintf('\nWill export j_demix as a .mat file.\n')
             if skipFrames ~= 1
                 fprintf('\n')
                 warning('skipFrames has been set to 1.',class(a))
                 skipFrames = 1;
             end
+            fprintf('\n')
+            warning('Will export j_demix as a .mat file.',class(a))
         end
     else
         fprintf('\nWill NOT export j_demix.\n');
@@ -127,7 +128,13 @@ function preChecks
 
     % Final confirmation.
     if export == true
-        fprintf(['\nWill export frames as a .' f '.\n']);
+        if skipFrames ~= 1
+            fprintf('\n')
+            warning('skipFrames has been set to 1.',class(a))
+            skipFrames = 1;
+        end
+        fprintf('\n')
+        warning(['Will export frames as .' f '.'],class(a))
     else
         fprintf('\nWill NOT export frames.\n');
     end
@@ -185,8 +192,26 @@ end
 function [x0ExpTemp, MCSExpTemp] = findRoots
     global frame lambda lateralView X F c0 polDeg evapFront rootExists x0 MCS numIters n
     
-    X = [1:1:size(frame,1)/lambda]';
     if lateralView == false
+        X = [1:1:size(frame,1)/lambda]';
+        ws = warning('off','all');  %Turn off warnings
+        F = polyfit(X,c0',polDeg); %Fit the data
+        warning(ws)  %Turn them back on
+        
+        % Define the function to find a root for, and find said root.
+        fun = @(x)polyval(F,x)-evapFront; rootExists = false;
+        if fun(X(1)) < 0 && fun(X(end-1)) > 0
+            x0(n) = fzero(fun,X([1,end-1])); rootExists = true; x0ExpTemp = x0(n);
+            MCS(n) = numIters*(n-1)/(size(frame,1)*size(frame,2)); MCSExpTemp = MCS(n);
+        elseif fun(X(end-1)) < 0 && fun(X(1)) > 0
+            x0(n) = fzero(fun,X([1,end-1])); rootExists = true; x0ExpTemp = x0(n);
+            MCS(n) = numIters*(n-1)/(size(frame,1)*size(frame,2)); MCSExpTemp = MCS(n);
+        else
+            x0ExpTemp = 0;
+            MCSExpTemp = 0;
+        end
+    else
+        X = [1:1:size(frame,2)/lambda]';
         ws = warning('off','all');  %Turn off warnings
         F = polyfit(X,c0',polDeg); %Fit the data
         warning(ws)  %Turn them back on
@@ -275,7 +300,7 @@ function setDimensions
     set(gcf,'color','w');
     set(gca,'FontSize',fontSize);
     if export == true && sum(f == 'pdf') == 3
-        %set(gca,'Position', [0.06 0.13 0.92 0.85])
+        set(gcf,'Position', [0 0 550 400])
     else
         title(['Concentration of zeros = ' num2str(round(sum(c0)/size(c0,2),2)) '; MCS = ' num2str(round(MCSTemp,0))])
         %set(gca,'Position', [0.06 0.13 0.92 0.8])
@@ -285,7 +310,7 @@ end
 
 % This function simply extract the frames as png, pdf or gif.
 function exportFrame
-    global c0 MCSTemp f directory pauseTime n b timeDep current
+    global c0 MCSTemp f directory pauseTime n b timeDep current allSpecies lateralView
     
     fig = gcf;
     if sum(f == 'gif') ~= 3
@@ -297,6 +322,12 @@ function exportFrame
                 current = k/10;
                 if timeDep == true
                     filename = sprintf([directory '_MCS_' num2str(round(MCSTemp,0)) '_c0_0%d-solventDistribution-timeDep.' f],str2num(strrep(num2str(round(sum(c0)/size(c0,2),2)),'.','')));
+                elseif allSpecies == true
+                    if lateralView == true
+                        filename = sprintf([directory '_MCS_' num2str(round(MCSTemp,0)) '_c0_0%d-solventDistribution-lateralView-allSpecies.' f],str2num(strrep(num2str(round(sum(c0)/size(c0,2),2)),'.','')));
+                    else
+                        filename = sprintf([directory '_MCS_' num2str(round(MCSTemp,0)) '_c0_0%d-solventDistribution-allSpecies.' f],str2num(strrep(num2str(round(sum(c0)/size(c0,2),2)),'.','')));
+                    end
                 else
                     filename = sprintf([directory '_MCS_' num2str(round(MCSTemp,0)) '_c0_0%d-solventDistribution.' f],str2num(strrep(num2str(round(sum(c0)/size(c0,2),2)),'.','')));
                 end
