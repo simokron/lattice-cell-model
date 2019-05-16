@@ -22,14 +22,15 @@ prefix = 'PBCvsFBC/';
 %folder = 'lambda_4-L_256-J_0.0000_1.0000_0.0000-numIters_2-22-initialDist_80_10_10-FBC';
 
 % Declare global variables
-global lambda L numIters f directory frame lateralView fontSize timeDep polDeg evapFront n export MCSTemp pauseTime saveMat x0Name fileExistsx0 skipFrames
+global lambda L numIters f directory frame lateralView fontSize allSpecies timeDep polDeg evapFront n export MCSTemp pauseTime saveMat x0Name fileExistsx0 skipFrames
 
 % Various settings related to the visualisation of the data.
 skipFrames = 3; %The number of .dat files to skip for each frame rendered in MATALB.
 evapFront = 0.35; %The 'arbitrary' critical concentration.
 polDeg = 5; %The polynomial degree of the interpolation
 lateralView = false; %Concentration per column, rather than per row. Not super useful, but it's here.
-timeDep = true; saveMat = true; %Shows the time dependence after completion (and exports if export = true); the saveMat boolean controls the exporting of the j_demix data to a matrix.
+allSpecies = true; %Shows all of the species.
+timeDep = false; saveMat = false; %Shows the time dependence after completion (and exports if export = true); the saveMat boolean controls the exporting of the j_demix data to a matrix.
 fontSize = 18; % 14 for 0.5\linewidth; 21 for 0.33\linewidth (for 1:1 scale - try 18 if it's too large)
 
 % Some settings for file exporting.
@@ -88,7 +89,7 @@ end
 %% Functions
 % This function does some initial debugging to catch any obvious mistakes, such as the directory being empty.
 function preChecks
-    global directory f export fileExistsx0 timeDep saveMat x0Name skipFrames current 
+    global directory f export fileExistsx0 timeDep saveMat x0Name skipFrames current allSpecies
     a = dir([directory '/*.dat']);
     b = numel(a);
     x0Name = [directory '-x0.mat'];
@@ -99,6 +100,13 @@ function preChecks
     fprintf(['\nThe number of .dat files in the directory is ' num2str(b) '.\n'])
     
     current = 1; %Maximum value to export.
+    
+    % Check compatibality of settings.
+    if allSpecies == true && timeDep == true
+        allSpecies = false;
+        fprintf('\n')
+        error('Incompatible settings: allSpecies & timeDep cannot both be true.',class(a))
+    end
 
     % Check if the .mat file exists and warn the user if it does.
     if timeDep == true && saveMat == true
@@ -200,16 +208,20 @@ end
 
 % This function generates the plot based on the data.
 function generatePlot
-    global fontSize timeDep X lateralView F rootExists c0 x0 evapFront n frame lambda
+    global fontSize timeDep X lateralView F rootExists c0 c1 c2 x0 evapFront n frame lambda allSpecies
 
     clf; % Clear the figure.
     h1 = axes;
     set(gca,'FontSize',fontSize)
     hold on
     if timeDep == false
-        %plot(X,c2,'ok', 'MarkerSize',5)
-        plot(X,c0,'.r', 'MarkerSize',20)
-        %plot(X,c1,'.k', 'MarkerSize',20)
+        if allSpecies == true
+            plot(X,c2,'ok', 'MarkerSize',5)
+            plot(X,c0,'.r', 'MarkerSize',20)
+            plot(X,c1,'.k', 'MarkerSize',20)
+        else
+            plot(X,c0,'.r', 'MarkerSize',20)
+        end
     else
         plot(X,c0,'.r', 'MarkerSize',20)
     end
@@ -234,8 +246,11 @@ function generatePlot
     end
     if timeDep == false
         ylabel('Concentration')
-        legend('$c_{0}$','Location','northwest')
-        %legend('$c_{-1}$','$c_{0}$','$c_{+1}$','Location','northwest')
+        if allSpecies == true
+            legend('$c_{-1}$','$c_{0}$','$c_{+1}$','Location','northwest')
+        else
+            legend('$c_{0}$','Location','northwest')
+        end
     else
         ylabel('Concentration')
         legend('$c_{0}$','Polynomial fit','Location','northwest')
