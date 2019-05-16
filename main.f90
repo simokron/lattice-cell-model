@@ -289,43 +289,45 @@ contains
 !        enddo
 
         do h = 1, 11, 2
-            if(FBC .eqv. .true. .and. topView .eqv. .false.) then
-                if(j_c == L/lambda) then
-                    if(t == 1) then
-                        if(h == 3) coordNum(1) = coordNum(1) - 1
+            if(FBC .eqv. .true.) then
+                if(topView .eqv. .false.) then
+                    if(j_c == L/lambda) then
+                        if(t == 1) then
+                            if(h == 3) coordNum(1) = coordNum(1) - 1
 
-                    elseif(t == 2) then
-                        if(h == 5) coordNum(2) = coordNum(2) - 1
-                        if(h == 7) coordNum(1) = coordNum(1) - 1
+                        elseif(t == 2) then
+                            if(h == 5) coordNum(2) = coordNum(2) - 1
+                            if(h == 7) coordNum(1) = coordNum(1) - 1
 
-                    elseif(t == 3) then
+                        elseif(t == 3) then
 
-                    elseif(t == 4) then
-                        if(h == 5) coordNum(1) = coordNum(1) - 1
-                        if(h == 7) coordNum(2) = coordNum(2) - 1
+                        elseif(t == 4) then
+                            if(h == 5) coordNum(1) = coordNum(1) - 1
+                            if(h == 7) coordNum(2) = coordNum(2) - 1
 
+                        endif
+
+                    elseif(j_c == 1) then
+                        if(t == 1) then
+
+                        elseif(t == 2) then
+                            if(h == 1) coordNum(2) = coordNum(2) - 1
+                            if(h == 11) coordNum(1) = coordNum(1) - 1
+
+                        elseif(t == 3) then
+                            if(h == 9) coordNum(1) = coordNum(1) - 1
+
+                        elseif(t == 4) then
+                            if(h == 1) coordNum(1) = coordNum(1) - 1
+                            if(h == 11) coordNum(2) = coordNum(2) - 1
+
+                        endif
+
+                    elseif(j_c == L/lambda - 1 .and. t == 3) then
+                        if(h == 3) coordNum(2) = coordNum(2) - 1
+                    elseif(j_c == 1+1 .and. t == 1) then
+                        if(h == 9) coordNum(2) = coordNum(2) - 1
                     endif
-
-                elseif(j_c == 1) then
-                    if(t == 1) then
-
-                    elseif(t == 2) then
-                        if(h == 1) coordNum(2) = coordNum(2) - 1
-                        if(h == 11) coordNum(1) = coordNum(1) - 1
-
-                    elseif(t == 3) then
-                        if(h == 9) coordNum(1) = coordNum(1) - 1
-
-                    elseif(t == 4) then
-                        if(h == 1) coordNum(1) = coordNum(1) - 1
-                        if(h == 11) coordNum(2) = coordNum(2) - 1
-
-                    endif
-
-                elseif(j_c == L/lambda - 1 .and. t == 3) then
-                    if(h == 3) coordNum(2) = coordNum(2) - 1
-                elseif(j_c == 1+1 .and. t == 1) then
-                    if(h == 9) coordNum(2) = coordNum(2) - 1
                 endif
             endif
         enddo
@@ -345,37 +347,39 @@ contains
         enddo
 
         do h = 1, 5, 2
-            if(FBC .eqv. .true. .and. topView .eqv. .false.) then
-                if(j_c == L/lambda) then
-                    if(t == 1) then
+            if(FBC .eqv. .true.) then
+                if(topView .eqv. .false.) then
+                    if(j_c == L/lambda) then
+                        if(t == 1) then
+                            if(h == 3) GO TO 15
+
+                        elseif(t == 2) then
+                            if(h == 5) GO TO 15
+
+                        elseif(t == 3) then
+
+                        elseif(t == 4) then
+                            if(h == 5) GO TO 15
+
+                        endif
+
+                    elseif(j_c == 1) then
+                        if(t == 1) then
+
+                        elseif(t == 2) then
+                            if(h == 1) GO TO 15
+
+                        elseif(t == 3) then
+
+                        elseif(t == 4) then
+                            if(h == 1) GO TO 15
+
+                        endif
+
+                    elseif(j_c == L/lambda - 1 .and. t == 3) then
                         if(h == 3) GO TO 15
-
-                    elseif(t == 2) then
-                        if(h == 5) GO TO 15
-
-                    elseif(t == 3) then
-
-                    elseif(t == 4) then
-                        if(h == 5) GO TO 15
-
+                    elseif(j_c == 1+1 .and. t == 1) then
                     endif
-
-                elseif(j_c == 1) then
-                    if(t == 1) then
-
-                    elseif(t == 2) then
-                        if(h == 1) GO TO 15
-
-                    elseif(t == 3) then
-
-                    elseif(t == 4) then
-                        if(h == 1) GO TO 15
-
-                    endif
-
-                elseif(j_c == L/lambda - 1 .and. t == 3) then
-                    if(h == 3) GO TO 15
-                elseif(j_c == 1+1 .and. t == 1) then
                 endif
             endif
             do k = 1, 3
@@ -394,37 +398,39 @@ contains
 15          continue
         enddo
         do h = 7, 11, 2
-            if(FBC .eqv. .true. .and. topView .eqv. .false.) then
-                if(j_c == L/lambda) then
-                    if(t == 1) then
+            if(FBC .eqv. .true.) then
+                if(topView .eqv. .false.) then
+                    if(j_c == L/lambda) then
+                        if(t == 1) then
 
-                    elseif(t == 2) then
-                        if(h == 7) GO TO 25
+                        elseif(t == 2) then
+                            if(h == 7) GO TO 25
 
-                    elseif(t == 3) then
+                        elseif(t == 3) then
 
-                    elseif(t == 4) then
-                        if(h == 7) GO TO 25
+                        elseif(t == 4) then
+                            if(h == 7) GO TO 25
 
-                    endif
+                        endif
 
-                elseif(j_c == 1) then
-                    if(t == 1) then
+                    elseif(j_c == 1) then
+                        if(t == 1) then
 
-                    elseif(t == 2) then
-                        if(h == 11) GO TO 25
+                        elseif(t == 2) then
+                            if(h == 11) GO TO 25
 
-                    elseif(t == 3) then
+                        elseif(t == 3) then
+                            if(h == 9) GO TO 25
+
+                        elseif(t == 4) then
+                            if(h == 11) GO TO 25
+
+                        endif
+
+                    elseif(j_c == L/lambda - 1 .and. t == 3) then
+                    elseif(j_c == 1+1 .and. t == 1) then
                         if(h == 9) GO TO 25
-
-                    elseif(t == 4) then
-                        if(h == 11) GO TO 25
-
                     endif
-
-                elseif(j_c == L/lambda - 1 .and. t == 3) then
-                elseif(j_c == 1+1 .and. t == 1) then
-                    if(h == 9) GO TO 25
                 endif
             endif
             do k = 1, 3
@@ -598,10 +604,12 @@ contains
                 endif
             elseif(topView .eqv. .true.) then
                 if(spin == 0) then
-                    call random_number(P) !Compare to a pseudo-random number between 0 and 1.
-!                    if(P < 0.0002) call evap(j_s, i_s, j_c, i_c, sigma, numSpins)
-                    if(P < 0.002) call evap(j_s, i_s, j_c, i_c, sigma, numSpins)
-                    GO TO 10
+                    if(noEvap .eqv. .false.) then
+                        call random_number(P) !Compare to a pseudo-random number between 0 and 1.
+    !                    if(P < 0.0002) call evap(j_s, i_s, j_c, i_c, sigma, numSpins)
+                        if(P < 0.002) call evap(j_s, i_s, j_c, i_c, sigma, numSpins)
+                        GO TO 10
+                    endif
                 endif
             endif
 
