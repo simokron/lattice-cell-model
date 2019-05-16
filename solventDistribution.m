@@ -22,7 +22,7 @@ prefix = 'PBCvsFBC/';
 %folder = 'lambda_4-L_256-J_0.0000_1.0000_0.0000-numIters_2-22-initialDist_80_10_10-FBC';
 
 % Declare global variables
-global lambda L numIters f directory frame lateralView fontSize allSpecies timeDep polDeg evapFront n export MCSTemp pauseTime saveMat x0Name fileExistsx0 skipFrames
+global lambda L numIters f directory frame lateralView fontSize allSpecies timeDep polDeg evapFront n export MCSTemp pauseTime saveMat x0Name fileExistsx0 skipFrames b
 
 % Various settings related to the visualisation of the data.
 skipFrames = 3; %The number of .dat files to skip for each frame rendered in MATALB.
@@ -34,7 +34,7 @@ timeDep = false; saveMat = false; %Shows the time dependence after completion (a
 fontSize = 18; % 14 for 0.5\linewidth; 21 for 0.33\linewidth (for 1:1 scale - try 18 if it's too large)
 
 % Some settings for file exporting.
-export = false; f = 'gif'; %Turns on the frame export of type 'f' - supports pdf, png or gif!
+export = true; f = 'pdf'; %Turns on the frame export of type 'f' - supports pdf, png or gif!
 pauseTime = 0.2; %The time between each frame in the GIF.
 
 % Run the folder selector if necessary and extract the parameters from the directory name.
@@ -290,10 +290,10 @@ function exportFrame
     fig = gcf;
     if sum(f == 'gif') ~= 3
         for k = 1:9
-            if c0 <= 0.1
+            if round(sum(c0)/size(c0,2),2) <= 0.1
                 k = 0.1;
             end
-            if round(c0,2) == k/10 && k/10 < current || n == b
+            if round(sum(c0)/size(c0,2),2) == k/10 && k/10 < current || n == b
                 current = k/10;
                 if timeDep == true
                     filename = sprintf([directory '_MCS_' num2str(round(MCSTemp,0)) '_c0_0%d-solventDistribution-timeDep.' f],str2num(strrep(num2str(round(sum(c0)/size(c0,2),2)),'.','')));
