@@ -12,9 +12,9 @@ set(groot, 'defaultLegendInterpreter','latex');
 %prefix = '';
 %prefix = 'automatedRun/512/';
 %prefix = 'debug/';
-%prefix = 'recreation/';
+prefix = 'recreation/';
 %prefix = 'J_str/';
-prefix = 'PBCvsFBC/';
+%prefix = 'PBCvsFBC/';
 %prefix = 'solventDistribution/';
 %prefix = 'topView/';
 
@@ -25,19 +25,19 @@ prefix = 'PBCvsFBC/';
 global lambda L cellVisualisation linInt numIters mag gridOn fontSize criticalRegion export f c0 MCS n b x0 frame directory pauseTime nSave locsSave
 
 % Various settings related to the visualisation of the data.
-cellVisualisation = true; cD = 16; %cD is the colour-depth (8 for 8 bit, 12 for 12 bit etc).
+cellVisualisation = false; cD = 16; %cD is the colour-depth (8 for 8 bit, 12 for 12 bit etc).
 linInt = false; mag = 20; %Applies linear interpolation to the frames; mag is the magnification (e.g. 20 times).
 gridOn = false; %Overlays a grid representing the cells. Will be automatically disabled if linInt = true.
 skipFrames = 1; %The number of .dat files to skip for each frame rendered in MATALB.
-fontSize = 14; % 14 for 0.5\linewidth; 21 for 0.33\linewidth (for 1:1 scale - try 18 if it's too large)
+fontSize = 18; % 14 for 0.5\linewidth; 21 for 0.33\linewidth (for 1:1 scale - try 18 if it's too large)
 
 % Some Fourier transform settings.
 FourierTransform = false; stretchCS = true; FTMap = jet(2^cD); %disables gridOn an shows the fft2 image; stretchCS applies a stretched colour-space of type FTMap;
-radialDist = false; %Shows the radial distribution of the fft2 data.
-criticalRegion = true; critUp = 0; critDown = 0; %If ciritcalRegion is combined with radialDist, it shows the line profile.. otherwise it overlays the image (if on its own) or shows the fft critical region (if combined with FourierTransform). The critical region is specified using critUp and critLow (in terms of # of cells).
+radialDist = true; %Shows the radial distribution of the fft2 data.
+criticalRegion = false; critUp = 0; critDown = 4; %If ciritcalRegion is combined with radialDist, it shows the line profile.. otherwise it overlays the image (if on its own) or shows the fft critical region (if combined with FourierTransform). The critical region is specified using critUp and critLow (in terms of # of cells).
 
 % Some settings for file exporting.
-export = true; f = 'pdf'; %Turns on the frame export of type 'f' - supports pdf, png or gif!
+export = false; f = 'pdf'; %Turns on the frame export of type 'f' - supports pdf, png or gif!
 pauseTime = 0.1; %The time between each frame in the GIF.
 height = 838; width = 800; %The dimensions in pixels of the png/GIF. Note that the height should be increased to account for the title text. The PDFs export with a (preprogrammed) small size for space-conserving reasons.
 
@@ -478,24 +478,12 @@ end
 % This function takes the FT data, finds the radial average and plots the data, indicating the dominating peak.
 function frameUpdated = radialPeaks(YTemp)
     global n x0 lambda L nSave locsSave
-    %if criticalRegion ~= true
-        r = [0:1:size(YTemp,1)/2];
-        r
-        rAvg = radialAverage(YTemp, size(YTemp,1)/2+1, size(YTemp,1)/2+1, r);
-        
-%         r = [0:1:size(YTemp,2)/2];
-%         rAvg = radialAverage(YTemp, size(YTemp,2)/2+1, size(YTemp,2)/2+1, r)
-        %[pks,locs] = findpeaks(rAvg(1:100),r(1:100)); % Find peaks within radius 100.
-        if size(r,2) > 2
-            [pks,locs] = findpeaks(rAvg(1:end),r(1:end)); % Find peaks.
-        end
-%     else
-%         [maxValue, linearIndexesOfMaxes] = max(YTemp(:));
-%         [rowsOfMaxes colsOfMaxes] = find(YTemp == maxValue);
-%         xData = YTemp(rowsOfMaxes,sort(unique([colsOfMaxes:colsOfMaxes+12])));
-%         x = [1:size(xData,2)]-1;
-%         [pks,locs] = findpeaks(xData,x); % Find peaks along critical x-axis.
-%     end
+    r = [0:1:size(YTemp,1)/2];
+    rAvg = radialAverage(YTemp, size(YTemp,1)/2+1, size(YTemp,1)/2+1, r);
+
+    if size(r,2) > 2
+        [pks,locs] = findpeaks(rAvg(1:end),r(1:end)); % Find peaks.
+    end
     % Save largest peak
     if exist('locs') == 1 && isempty(locs) ~= 1
         if exist('x0(n)') == 1 && x0(n) ~= 0 || exist('x0(n)') == 0
@@ -505,21 +493,15 @@ function frameUpdated = radialPeaks(YTemp)
             locsSave(n) = locs(rowsOfMaxes);
         end
     end
-    
+
     % Update frame (needs to be here to avoid massive confusion in the main script). Note that I pass the boolean 'frameUpdated' to avoid overwriting this update.
     clf;
     hold on
-%     if criticalRegion ~= true
-        plot(r,rAvg,'.-k', 'MarkerSize',20);
-        %xlim([min(r), max(r)]); % CHANGE THE UPPER LIMIT WHEN EXPORTING!
-%     else
-%         plot(x,xData,'.-k', 'MarkerSize',20);
-%         xlim([min(x), max(x)]); % CHANGE THE UPPER LIMIT WHEN EXPORTING!
-%     end
+    plot(r,rAvg,'.-k', 'MarkerSize',20);
 
-%     xPrime = sort([1:(L/lambda)/8:L/lambda]-1);
-%     xPrime = xPrime(xPrime ~= 0);
-%     xticks(xPrime);
+    xPrime = sort([1:(L/lambda)/8:L/lambda]-1);
+    xPrime = xPrime(xPrime ~= 0);
+    xticks(xPrime);
     if exist('pks') == 1 && size(pks,2) ~= 0 && n > 1
         [maxValue, linearIndexesOfMaxes] = max(pks);
         rowsOfMaxes = find(pks == maxValue);
@@ -529,7 +511,7 @@ function frameUpdated = radialPeaks(YTemp)
     end
     hold off
     frameUpdated = true;
-    
+
     setDimensionsPeaks
 end
 
@@ -544,7 +526,8 @@ function setDimensionsPeaks
         xticks(sort(unique([xticks])));
     end
     
-    xlim([0, 100])
+    %SET LIMITS WHEN EXPORTING!
+    %xlim([0, 8])
     %ylim([0, 2000]*(4/lambda));
     
     yticks([])
