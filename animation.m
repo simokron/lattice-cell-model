@@ -624,10 +624,10 @@ function exportFrame
     fig = gcf;
     if sum(f == 'gif') ~= 3
         for k = 1:9
-            if c0 <= 0.1
+            if c0 < 0.1
                 k = 0.1;
             end
-            if round(c0,2) == k/10 && k/10 < current || n == b
+            if round(c0,2) == k/10 && k/10 < current || n == b || n == 1
                 current = k/10;
                 filename = sprintf([directory '_MCS_' num2str(round(MCS,0)) '_c0_0%d.' f],str2num(strrep(num2str(round(c0,2)),'.','')));
                 if sum(f == 'png') == 3

@@ -12,8 +12,8 @@ set(groot, 'defaultLegendInterpreter','latex');
 %prefix = '';
 %prefix = 'automatedRun/512/';
 %prefix = 'debug/';
-prefix = 'recreation/';
-%prefix = 'J_str/';
+%prefix = 'recreation/';
+prefix = 'J_str/';
 %prefix = 'PBCvsFBC/';
 %prefix = 'solventDistribution/';
 %prefix = 'topView/';
@@ -34,7 +34,7 @@ timeDep = false; saveMat = false; %Shows the time dependence after completion (a
 fontSize = 24; % 18 for 0.5\linewidth; 24 for 0.33\linewidth (for 1:1 scale - try 18 if it's too large)
 
 % Some settings for file exporting.
-export = false; f = 'pdf'; %Turns on the frame export of type 'f' - supports pdf, png or gif!
+export = true; f = 'pdf'; %Turns on the frame export of type 'f' - supports pdf, png or gif!
 pauseTime = 0.2; %The time between each frame in the GIF.
 
 % Run the folder selector if necessary and extract the parameters from the directory name.
@@ -315,10 +315,10 @@ function exportFrame
     fig = gcf;
     if sum(f == 'gif') ~= 3
         for k = 1:9
-            if round(sum(c0)/size(c0,2),2) <= 0.1
+            if sum(c0)/size(c0,2) < 0.1
                 k = 0.1;
             end
-            if round(sum(c0)/size(c0,2),2) == k/10 && k/10 < current || n == b
+            if round(sum(c0)/size(c0,2),2) == k/10 && k/10 < current || n == b || n == 1
                 current = k/10;
                 if timeDep == true
                     filename = sprintf([directory '_MCS_' num2str(round(MCSTemp,0)) '_c0_0%d-solventDistribution-timeDep.' f],str2num(strrep(num2str(round(sum(c0)/size(c0,2),2)),'.','')));
