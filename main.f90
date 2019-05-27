@@ -10,7 +10,7 @@ module constants
     !beta is the reciprocal temperature; p0 is the concentration of zeroes at t = 0; p1 is the concentration of +1 (and -1 at the moment); phi is to volatility; cutoffConc is the final residual solvent concentration - set to negative number for infinite run-time.
     !To boolean constSeed uses a constant seed for the RNG (for debugging); FBC enables the free boundary conditions.
     !sigma is the spin matrix; numSpins is a tensor of rank 3 which stores the number of spins of each spices per cell.
-    integer,parameter :: L = 512, lambda = 4
+    integer,parameter :: L = 512, lambda = 8
 !    character(128) :: prefix = 'automatedRun/1024/'
 !    character(128) :: prefix = 'debug/'
     character(128) :: prefix = 'recreation/'
@@ -247,7 +247,7 @@ contains
         !Reset the values before each run.
         E_current = 0; E_proposed = 0; coordNum = [4, 4]
 
-        !The number of spins in cell A and B can be trivially determined from,together with the number of spins of species k the currently considered spin interacts with (just the number of spins in that cell of the species, minus one to avoid self-interaction).
+        !The number of spins in cell A and B can be trivially determined using numSpins, together with the number of spins of species k (the currently considered spin) interacts with (just the number of spins in that cell of the species, minus one to avoid self-interaction).
         do k = 1,3
             numSpinsA(k) = numSpins(j_c,i_c,k)
             numSpinsB(k) = numSpins(j_c_p,i_c_p,k)
@@ -282,6 +282,7 @@ contains
         !And the nearest-neighbouring cell-cell interaction (note that the FBC changes the calculations with the neighbours slightly).
         !This section is hard to follow without the aid of the figure showing the nearest-neighbour cluster - see the thesis.
 
+        !First we adjust the coordNum.
         do h = 1, 11, 2
             if(FBC .eqv. .true.) then
                 if(topView .eqv. .false.) then
@@ -328,10 +329,12 @@ contains
             endif
         enddo
 
+        !Adjust the scaling factor w.r.t. the coordination number.
         do k = 1,2
             c(k) = 4./coordNum(k)
         enddo
 
+        !The energy between '1' and '2'.
         do k = 1, 3
             do b = 1, 3
                 E_current = E_current + (c(1)/c(2))*numSpinsA(k)*numSpinsB(b)*J_str(k,b)
@@ -339,6 +342,7 @@ contains
             enddo
         enddo
 
+        !The energy between '1' and '3', '4', '5'.
         do h = 1, 5, 2
             if(FBC .eqv. .true.) then
                 if(topView .eqv. .false.) then
@@ -392,6 +396,9 @@ contains
             enddo
 15          continue
         enddo
+
+
+        !The energy between '2' and '6', '7', '8'.
         do h = 7, 11, 2
             if(FBC .eqv. .true.) then
                 if(topView .eqv. .false.) then
@@ -443,10 +450,8 @@ contains
             enddo
 25          continue
         enddo
-!        print *, "coordNum = " // trim(num2str(coordNum))
-!        print *, sum(coordNum)
 
-        energyResult = [E_current, E_proposed]
+        energyResult = [E_current, E_proposed] !Return the energy.
 
         return
     end
@@ -731,6 +736,7 @@ program main
         expon = nint(16.9955*(L/lambda)**(0.1102))
     elseif(L == 512) then
         expon = nint(13.8647*(L/lambda)**(0.1309))
+!        expon = 26 !HARDCODED
     elseif(L == 256) then
         expon = nint(11.3520*(L/lambda)**(0.1621))
     elseif(L == 128) then
