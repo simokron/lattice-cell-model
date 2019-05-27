@@ -1,3 +1,5 @@
+% Originally written by Hugo Trentesaux here: https://se.mathworks.com/matlabcentral/answers/251714-radial-average-of-2d-matrix#answer_359975
+
 function profile = radialAverage(IMG, cx, cy, w)
     % computes the radial average of the image IMG around the cx,cy point
     % w is the vector of radii starting from zero

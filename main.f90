@@ -10,7 +10,7 @@ module constants
     !beta is the reciprocal temperature; p0 is the concentration of zeroes at t = 0; p1 is the concentration of +1 (and -1 at the moment); phi is to volatility; cutoffConc is the final residual solvent concentration - set to negative number for infinite run-time.
     !To boolean constSeed uses a constant seed for the RNG (for debugging); FBC enables the free boundary conditions.
     !sigma is the spin matrix; numSpins is a tensor of rank 3 which stores the number of spins of each spices per cell.
-    integer,parameter :: L = 512, lambda = 4
+    integer,parameter :: L = 512, lambda = 8
 !    character(128) :: prefix = 'automatedRun/1024/'
 !    character(128) :: prefix = 'debug/'
     character(128) :: prefix = 'recreation/'
@@ -18,14 +18,16 @@ module constants
 !    character(128) :: prefix = 'PBCvsFBC/'
 !    character(128) :: prefix = 'solventDistribution/'
 !    character(128) :: prefix = 'topView/'
-!    real,parameter :: beta = 0.6, p0 = 0.6, p1 = (1 - p0)/2, phi = 0, cutoffConc = 0.1, G = 0.5
-    real,parameter :: beta = 0.6, p0 = 0.6, p1 = 0.30, phi = 0.0, cutoffConc = 0.1, G = 0.5
-    logical,parameter :: constSeed = .false., FBC = .true., topView = .true., noEvap = .true.
+!    real,parameter :: beta = 0.6, p0 = 0.6, p1 = (1 - p0)/2, phi = 0, cutoffConc = 0.1, U = 2.0
+    real,parameter :: beta = 0.6, p0 = 0.6, p1 = 0.30, phi = 0.0, cutoffConc = 0.1, U = 2.0
+    logical,parameter :: constSeed = .false., FBC = .false., topView = .true., noEvap = .true.
     integer :: sigma(L,L), numSpins(L/lambda,L/lambda,1:3)
     integer, allocatable :: numIters
 
-!    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*[0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !J_ORIGINAL SCALED
-    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*[0, 1, 2, 1, 0, 1, 2, 1, 0], shape(J_str))) !2
+!    real,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !J_ORIGINAL SCALED
+!    real,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 2, 1, 0, 1, 2, 1, 0], shape(J_str))) !2
+
+    real,dimension(3, 3) :: J_str = transpose(reshape(0.5*[0, 1, 2, 1, 0, 1, 2, 1, 0], shape(J_str))) !2
 
 !    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*[0, 1, 0, 1, 0, 1, 0, 1, 0], shape(J_str))) !+1 and -1 are functionally the same.
 
@@ -245,7 +247,7 @@ contains
         !Reset the values before each run.
         E_current = 0; E_proposed = 0; coordNum = [4, 4]
 
-        !The number of spins in cell A and B can be trivially determined from,together with the number of spins of species k the currently considered spin interacts with (just the number of spins in that cell of the species, minus one to avoid self-interaction).
+        !The number of spins in cell A and B can be trivially determined using numSpins, together with the number of spins of species k (the currently considered spin) interacts with (just the number of spins in that cell of the species, minus one to avoid self-interaction).
         do k = 1,3
             numSpinsA(k) = numSpins(j_c,i_c,k)
             numSpinsB(k) = numSpins(j_c_p,i_c_p,k)
@@ -273,19 +275,14 @@ contains
 
         !The internal energy is determined using the number of spins per cell, since their location doesn't matter in mean-field.
         do k = 1, 3
-            E_current = E_current + numSpinsIntA(k)*J_str(spin+2,k) + numSpinsIntB(k)*J_str(spin_p+2,k)
-            E_proposed = E_proposed + numSpinsIntA(k)*J_str(spin_p+2,k) + numSpinsIntB(k)*J_str(spin+2,k)
+            E_current = E_current + numSpinsIntA(k)*J_str(spin+2,k)*U + numSpinsIntB(k)*J_str(spin_p+2,k)*U
+            E_proposed = E_proposed + numSpinsIntA(k)*J_str(spin_p+2,k)*U + numSpinsIntB(k)*J_str(spin+2,k)*U
         enddo
 
         !And the nearest-neighbouring cell-cell interaction (note that the FBC changes the calculations with the neighbours slightly).
         !This section is hard to follow without the aid of the figure showing the nearest-neighbour cluster - see the thesis.
-!        do k = 1, 3
-!            do b = 1, 3
-!                E_current = E_current + numSpinsA(k)*numSpinsB(b)*J_str(k,b)
-!                E_proposed = E_proposed + numSpinsAprop(k)*numSpinsBprop(b)*J_str(k,b)
-!            enddo
-!        enddo
 
+        !First we adjust the coordNum.
         do h = 1, 11, 2
             if(FBC .eqv. .true.) then
                 if(topView .eqv. .false.) then
@@ -323,27 +320,29 @@ contains
 
                     elseif(j_c == L/lambda - 1 .and. t == 3) then
                         if(h == 3) coordNum(2) = coordNum(2) - 1
+
                     elseif(j_c == 1+1 .and. t == 1) then
                         if(h == 9) coordNum(2) = coordNum(2) - 1
+
                     endif
                 endif
             endif
         enddo
 
+        !Adjust the scaling factor w.r.t. the coordination number.
         do k = 1,2
             c(k) = 4./coordNum(k)
-!            c(k) = 1
         enddo
 
-!        print *, c
-
+        !The energy between '1' and '2'.
         do k = 1, 3
             do b = 1, 3
-                E_current = E_current + (c(1)/c(2))*numSpinsA(k)*numSpinsB(b)*J_str(k,b)*G
-                E_proposed = E_proposed + (c(2)/c(1))*numSpinsAprop(k)*numSpinsBprop(b)*J_str(k,b)*G
+                E_current = E_current + (c(1)/c(2))*numSpinsA(k)*numSpinsB(b)*J_str(k,b)
+                E_proposed = E_proposed + (c(2)/c(1))*numSpinsAprop(k)*numSpinsBprop(b)*J_str(k,b)
             enddo
         enddo
 
+        !The energy between '1' and '3', '4', '5'.
         do h = 1, 5, 2
             if(FBC .eqv. .true.) then
                 if(topView .eqv. .false.) then
@@ -376,25 +375,30 @@ contains
 
                     elseif(j_c == L/lambda - 1 .and. t == 3) then
                         if(h == 3) GO TO 15
+
                     elseif(j_c == 1+1 .and. t == 1) then
+
                     endif
                 endif
             endif
             do k = 1, 3
                 do b = 1, 3
                     if(t == 1 .or. t == 4) then
-                        E_current = E_current + c(1)*numSpinsA(k)*numSpins(cellNeighbours(h), cellNeighbours(h+1), b)*J_str(k,b)*G
+                        E_current = E_current + c(1)*numSpinsA(k)*numSpins(cellNeighbours(h), cellNeighbours(h+1), b)*J_str(k,b)
                         E_proposed = E_proposed + c(1)*numSpinsAprop(k)* &
-                        numSpins(cellNeighbours(h), cellNeighbours(h+1), b)*J_str(k,b)*G
+                        numSpins(cellNeighbours(h), cellNeighbours(h+1), b)*J_str(k,b)
                     else
-                        E_current = E_current + c(2)*numSpinsB(k)*numSpins(cellNeighbours(h), cellNeighbours(h+1), b)*J_str(k,b)*G
+                        E_current = E_current + c(2)*numSpinsB(k)*numSpins(cellNeighbours(h), cellNeighbours(h+1), b)*J_str(k,b)
                         E_proposed = E_proposed + c(2)*numSpinsBprop(k)* &
-                        numSpins(cellNeighbours(h), cellNeighbours(h+1), b)*J_str(k,b)*G
+                        numSpins(cellNeighbours(h), cellNeighbours(h+1), b)*J_str(k,b)
                     endif
                 enddo
             enddo
 15          continue
         enddo
+
+
+        !The energy between '2' and '6', '7', '8'.
         do h = 7, 11, 2
             if(FBC .eqv. .true.) then
                 if(topView .eqv. .false.) then
@@ -434,22 +438,20 @@ contains
             do k = 1, 3
                 do b = 1, 3
                     if(t == 1 .or. t == 4) then
-                        E_current = E_current + c(2)*numSpinsB(k)*numSpins(cellNeighbours(h), cellNeighbours(h+1), b)*J_str(k,b)*G
+                        E_current = E_current + c(2)*numSpinsB(k)*numSpins(cellNeighbours(h), cellNeighbours(h+1), b)*J_str(k,b)
                         E_proposed = E_proposed + c(2)*numSpinsBprop(k)* &
-                        numSpins(cellNeighbours(h), cellNeighbours(h+1), b)*J_str(k,b)*G
+                        numSpins(cellNeighbours(h), cellNeighbours(h+1), b)*J_str(k,b)
                     else
-                        E_current = E_current + c(1)*numSpinsA(k)*numSpins(cellNeighbours(h), cellNeighbours(h+1), b)*J_str(k,b)*G
+                        E_current = E_current + c(1)*numSpinsA(k)*numSpins(cellNeighbours(h), cellNeighbours(h+1), b)*J_str(k,b)
                         E_proposed = E_proposed + c(1)*numSpinsAprop(k)* &
-                        numSpins(cellNeighbours(h), cellNeighbours(h+1), b)*J_str(k,b)*G
+                        numSpins(cellNeighbours(h), cellNeighbours(h+1), b)*J_str(k,b)
                     endif
                 enddo
             enddo
 25          continue
         enddo
-!        print *, "coordNum = " // trim(num2str(coordNum))
-!        print *, sum(coordNum)
 
-        energyResult = [E_current, E_proposed]
+        energyResult = [E_current, E_proposed] !Return the energy.
 
         return
     end
@@ -639,7 +641,7 @@ contains
 !            print *, dE
 
             !Now we simply insert the acceptance criteria from the model.
-            w = exp(-beta*dE)
+            w = exp(-beta*dE*real(lambda)**(-2))
 
             !Compare to a pseudo-random number between 0 and 1.
             call random_number(P)
@@ -734,6 +736,7 @@ program main
         expon = nint(16.9955*(L/lambda)**(0.1102))
     elseif(L == 512) then
         expon = nint(13.8647*(L/lambda)**(0.1309))
+!        expon = 26 !HARDCODED
     elseif(L == 256) then
         expon = nint(11.3520*(L/lambda)**(0.1621))
     elseif(L == 128) then
@@ -753,10 +756,10 @@ program main
     !This creates a directory with the correct name (if it does not currently exist).
     nI = nint(log(real(numIters))/log(2.))
     folderName = 'lambda_' // trim(adjustl(num2str(lambda))) // '-L_' // trim(adjustl(num2str(L))) // '-J_' // &
-        trim(adjustl(num2str(J_str(1,1)*lambda**2))) // '_' // trim(adjustl(num2str(J_str(1,2)*lambda**2))) // '_' // &
-        trim(adjustl(num2str(J_str(1,3)*lambda**2))) // '-numIters_2-' // trim(adjustl(num2str(nI))) // '-initialDist_' // &
+        trim(adjustl(num2str(J_str(1,1)))) // '_' // trim(adjustl(num2str(J_str(1,2)))) // '_' // &
+        trim(adjustl(num2str(J_str(1,3)))) // '-numIters_2-' // trim(adjustl(num2str(nI))) // '-initialDist_' // &
         trim(adjustl(num2str(nint(p0*100.)))) // '_' // trim(adjustl(num2str(nint(p1*100)))) // '_' // &
-        trim(adjustl(num2str(nint((1 - p0 - p1)*100))))
+        trim(adjustl(num2str(nint((1 - p0 - p1)*100)))) // '-U_' // trim(adjustl(num2str(U)))
     if(topView .eqv. .false.) then
         if(FBC .eqv. .true.) folderName = trim(folderName) // '-FBC'
         if(FBC .eqv. .false.) folderName = trim(folderName) // '-PBC'
