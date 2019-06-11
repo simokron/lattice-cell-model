@@ -12,23 +12,23 @@ set(groot, 'defaultLegendInterpreter','latex');
 %prefix = '';
 %prefix = 'automatedRun/512/';
 %prefix = 'debug/';
-prefix = 'recreation/';
+%prefix = 'recreation/';
 %prefix = 'J_str/';
 %prefix = 'PBCvsFBC/';
 %prefix = 'solventDistribution/';
-%prefix = 'topView/';
+prefix = 'topView/';
 
 % Hardcode folder (mostly for debugging).
 %folder = 'lambda_4-L_256-J_0.0000_1.0000_0.0000-numIters_2-22-initialDist_80_10_10-FBC';
 
 % Declare global variables
-global lambda L cellVisualisation linInt numIters mag gridOn fontSize criticalRegion export f c0 MCS n b x0 frame directory pauseTime nSave locsSave skipFrames
+global lambda L cellVisualisation linInt numIters mag gridOn fontSize criticalRegion export f c0 MCS n b x0 frame directory pauseTime nSave locsSave skipFrames skipFramesOverride
 
 % Various settings related to the visualisation of the data.
 cellVisualisation = true; cD = 16; %cD is the colour-depth (8 for 8 bit, 12 for 12 bit etc).
 linInt = false; mag = 20; %Applies linear interpolation to the frames; mag is the magnification (e.g. 20 times).
 gridOn = false; %Overlays a grid representing the cells. Will be automatically disabled if linInt = true.
-skipFrames = 1; %The number of .dat files to skip for each frame rendered in MATALB.
+skipFrames = 1; skipFramesOverride = true; %The number of .dat files to skip for each frame rendered in MATALB. If skipFramesOverride == true, this will carry over to the exported frames.
 fontSize = 18; % 14 for 0.5\linewidth; 21 for 0.33\linewidth (for 1:1 scale - try 18 if it's too large)
 
 % Some Fourier transform settings.
@@ -37,9 +37,9 @@ radialDist = true; %Shows the radial distribution of the fft2 data.
 criticalRegion = false; critUp = 0; critDown = 0; %If ciritcalRegion is combined with radialDist, it shows the line profile.. otherwise it overlays the image (if on its own) or shows the fft critical region (if combined with FourierTransform). The critical region is specified using critUp and critLow (in terms of # of cells).
 
 % Some settings for file exporting.
-export = false; f = 'pdf'; %Turns on the frame export of type 'f' - supports pdf, png or gif!
+export = false; f = 'gif'; %Turns on the frame export of type 'f' - supports pdf, png or gif!
 pauseTime = 0.1; %The time between each frame in the GIF.
-height = 838; width = 800; %The dimensions in pixels of the png/GIF. Note that the height should be increased to account for the title text. The PDFs export with a (preprogrammed) small size for space-conserving reasons.
+height = 535; width = 500; %The dimensions in pixels of the png/GIF. Note that the height should be increased to account for the title text. The PDFs export with a (preprogrammed) small size for space-conserving reasons.
 
 % And finally some settings for the MATLAB presentation.
 sequence = true; %true for whole the sequence (with skipFrames taken into account). Note that this is always true for exports.
@@ -285,7 +285,7 @@ end
 %% Functions
 % This function does some initial debugging to catch any obvious mistakes, such as the directory being empty.
 function [once, x0, rawMap, lowLim, go, tempPause, k] = preChecks(sequence)
-    global directory f export criticalRegion current skipFrames
+    global directory f export criticalRegion current skipFrames skipFramesOverride
     a = dir([directory '/*.dat']);
     b = numel(a);
     if b == 0
@@ -334,10 +334,13 @@ function [once, x0, rawMap, lowLim, go, tempPause, k] = preChecks(sequence)
 
     % Set initial conditionals for the main loop.
     if export == true
-        if skipFrames ~= 1
+        if skipFrames ~= 1 && skipFramesOverride ~= true
             fprintf('\n')
             warning('skipFrames has been set to 1.',class(a))
             skipFrames = 1;
+        elseif skipFrames ~= 1 && skipFramesOverride == true
+            fprintf('\n')
+            warning('Inadvisable setting: skipFrames ~= 1.\nConsider setting skipFramesOverride to false.',class(a))
         end
         fprintf('\n')
         warning(['Will export frames as .' f '.'],class(a))
@@ -558,7 +561,7 @@ function setDimensions(height, width, scalefactor)
     if export == true
         if sum(f == 'pdf') == 3
             height = 0.2*width; width = 0.2*width;
-        else
+        elseif sum(f == 'png') == 3
             height = width;
         end
     end
@@ -617,7 +620,7 @@ function drawBox(critRows, length, scalefactor)
     hold off
 end
 
-% This function simply extract the frames as png, pdf or gif.
+% This function simply extracts the frames as png, pdf or gif.
 function exportFrame
     global c0 MCS f directory pauseTime n b current
     
