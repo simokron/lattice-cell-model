@@ -16,7 +16,8 @@ set(groot, 'defaultLegendInterpreter','latex');
 %prefix = 'J_str/';
 %prefix = 'PBCvsFBC/';
 %prefix = 'solventDistribution/';
-prefix = 'topView/';
+%prefix = 'topView/';
+prefix = 'topView-Emilio/';
 
 % Hardcode folder (mostly for debugging).
 %folder = 'lambda_4-L_256-J_0.0000_1.0000_0.0000-numIters_2-22-initialDist_80_10_10-FBC';
@@ -25,7 +26,7 @@ prefix = 'topView/';
 global lambda L cellVisualisation linInt numIters mag gridOn fontSize criticalRegion export f c0 MCS n b x0 frame directory pauseTime nSave locsSave skipFrames skipFramesOverride
 
 % Various settings related to the visualisation of the data.
-cellVisualisation = true; cD = 16; %cD is the colour-depth (8 for 8 bit, 12 for 12 bit etc).
+cellVisualisation = false; cD = 16; %cD is the colour-depth (8 for 8 bit, 12 for 12 bit etc).
 linInt = false; mag = 20; %Applies linear interpolation to the frames; mag is the magnification (e.g. 20 times).
 gridOn = false; %Overlays a grid representing the cells. Will be automatically disabled if linInt = true.
 skipFrames = 1; skipFramesOverride = true; %The number of .dat files to skip for each frame rendered in MATALB. If skipFramesOverride == true, this will carry over to the exported frames.
@@ -565,6 +566,9 @@ function setDimensions(height, width, scalefactor)
             height = width;
         end
     end
+    if gridOn == true
+        height = width;
+    end
 
     set(gcf,'color','w');
     set(gcf,'Units','pixels');
@@ -588,7 +592,8 @@ function setDimensions(height, width, scalefactor)
             yticks([0:lambda:size(frame,2)]+0.5)
         end
         grid on
-        set(gca,'Position', [0.003 0.005 0.99 0.99])
+        set(gca,'Position', [0.003 0.003 0.995 0.995])
+        %set(gca,'Position', [0 0 1 1])
     else
         ax.YAxis.Visible = 'off';
         ax.XAxis.Visible = 'off';

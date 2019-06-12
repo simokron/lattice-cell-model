@@ -14,7 +14,8 @@ set(groot, 'defaultLegendInterpreter','latex');
 %prefix = 'J_str/';
 %prefix = 'PBCvsFBC/';
 %prefix = 'solventDistribution/';
-prefix = 'topView/';
+%prefix = 'topView/';
+prefix = 'topView-Emilio/';
 
 %folder = 'lambda_4-L_256-J_0.0000_1.0000_0.0000-numIters_2-22-initialDist_80_10_10-FBC';
 

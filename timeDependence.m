@@ -23,8 +23,9 @@ global logLog fontSize export f allFiles folder
 % Various settings related to the visualisation of the data.
 allFiles = false;
 logLog = true; %Shows the final graph on a loglog scale if true.
-cutoff = 12; % The number of data points to exclude near the end.
-cutoff = [15 30 30 40 30]; % The number of data points to exclude near the end in the allFiles case. Note that you need this vector to be the same length as the number of .mat files!
+cutoff = 65; % The number of data points to exclude near the end.
+%cutoff = [15 30 30 40 30]; % The number of data points to exclude near the end in the allFiles case. Note that you need this vector to be the same length as the number of .mat files!
+%cutoff = [26 30 30 40 30];
 fontSize = 18; % 14 for 0.5\linewidth; 21 for 0.33\linewidth (for 1:1 scale - try 18 if it's too large)
 
 % Some settings for file exporting.

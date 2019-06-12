@@ -10,14 +10,16 @@ module constants
     !beta is the reciprocal temperature; p0 is the concentration of zeroes at t = 0; p1 is the concentration of +1 (and -1 at the moment); phi is to volatility; cutoffConc is the final residual solvent concentration - set to negative number for infinite run-time.
     !To boolean constSeed uses a constant seed for the RNG (for debugging); FBC enables the free boundary conditions.
     !sigma is the spin matrix; numSpins is a tensor of rank 3 which stores the number of spins of each spices per cell.
-    integer,parameter :: L = 512, lambda = 8
+    integer,parameter :: L = 512, lambda = 1
 !    character(128) :: prefix = 'automatedRun/1024/'
 !    character(128) :: prefix = 'debug/'
-    character(128) :: prefix = 'recreation/'
+!    character(128) :: prefix = 'recreation/'
 !    character(128) :: prefix = 'J_str/'
 !    character(128) :: prefix = 'PBCvsFBC/'
 !    character(128) :: prefix = 'solventDistribution/'
 !    character(128) :: prefix = 'topView/'
+    character(128) :: prefix = 'topView-Emilio/'
+
 !    real,parameter :: beta = 0.6, p0 = 0.6, p1 = (1 - p0)/2, phi = 0, cutoffConc = 0.1, U = 2.0
     real,parameter :: beta = 0.6, p0 = 0.6, p1 = 0.30, phi = 0.0, cutoffConc = 0.1, U = 2.0
     logical,parameter :: constSeed = .false., FBC = .false., topView = .true., noEvap = .true.
@@ -39,6 +41,44 @@ module constants
 !    integer,dimension(3, 3) :: J_str = transpose(reshape([0, 35, 15, 35, 0, 35, 15, 35, 0], shape(J_str))) !This is the 'strong repulsion' in Andrea's paper. It kinda works but I need much more energy..
 !    integer,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 6, 1, -2, 1, 6, 1, -2], shape(J_str))) !This is the 'strong repulsion' in Andrea's paper. It kinda works but I need much more energy.
 
+end module
+
+!This module takes care of number to string conversion for creation of directories etc.
+module strings
+    use constants
+
+    ! GLOBAL FUNCTIONS
+    public :: num2str
+
+    ! Everything else is private
+    private
+
+    interface num2str
+      module procedure num2str_int
+      module procedure num2str_real
+    end interface
+
+contains
+
+    function num2str_int(number)
+        implicit none
+        integer,intent(in) :: number
+        character(len=6)   :: num2str_int
+        character(len=6)   :: tmp
+
+        write(tmp,'(I6)')number
+        num2str_int = tmp
+    end function
+
+    function num2str_real(number)
+        implicit none
+        real,intent(in)    :: number
+        character(len=6)   :: num2str_real
+        character(len=6)   :: tmp
+
+        write(tmp,'(F6.4)')number
+        num2str_real = tmp
+    end function
 end module
 
 !This module contains the subroutines responsible for initialising the simulation.
@@ -674,44 +714,6 @@ contains
 
 end module dynamics
 
-!This module takes care of number to string conversion for creation of directories etc.
-module strings
-    use constants
-
-    ! GLOBAL FUNCTIONS
-    public :: num2str
-
-    ! Everything else is private
-    private
-
-    interface num2str
-      module procedure num2str_int
-      module procedure num2str_real
-    end interface
-
-contains
-
-    function num2str_int(number)
-        implicit none
-        integer,intent(in) :: number
-        character(len=6)   :: num2str_int
-        character(len=6)   :: tmp
-
-        write(tmp,'(I6)')number
-        num2str_int = tmp
-    end function
-
-    function num2str_real(number)
-        implicit none
-        real,intent(in)    :: number
-        character(len=6)   :: num2str_real
-        character(len=6)   :: tmp
-
-        write(tmp,'(F6.4)')number
-        num2str_real = tmp
-    end function
-end module
-
 !The main program controls the simulation in the sense that it initialises the system, writes .dat files, informs the user about approximate time remaining etc.
 program main
     use strings
@@ -736,7 +738,7 @@ program main
         expon = nint(16.9955*(L/lambda)**(0.1102))
     elseif(L == 512) then
         expon = nint(13.8647*(L/lambda)**(0.1309))
-!        expon = 26 !HARDCODED
+        expon = 26 !HARDCODED
     elseif(L == 256) then
         expon = nint(11.3520*(L/lambda)**(0.1621))
     elseif(L == 128) then
