@@ -111,7 +111,7 @@ else
     set(gcf,'color','w');
     tightfig;
     fig = gcf;
-    filename = 'c0vsMCS';
+    filename = ['c0vsMCS.' f];
     
     if sum(f == 'png') == 3
         frame = getframe(fig);
