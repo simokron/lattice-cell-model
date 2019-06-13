@@ -10,7 +10,7 @@ module constants
     !beta is the reciprocal temperature; p0 is the concentration of zeroes at t = 0; p1 is the concentration of +1 (and -1 at the moment); phi is to volatility; cutoffConc is the final residual solvent concentration - set to negative number for infinite run-time.
     !To boolean constSeed uses a constant seed for the RNG (for debugging); FBC enables the free boundary conditions.
     !sigma is the spin matrix; numSpins is a tensor of rank 3 which stores the number of spins of each spices per cell.
-    integer,parameter :: L = 1024, lambda = 1
+    integer,parameter :: L = 1024, lambda = 1, evapExp = 27
 !    character(128) :: prefix = 'automatedRun/1024/'
 !    character(128) :: prefix = 'debug/'
 !    character(128) :: prefix = 'recreation/'
@@ -22,17 +22,17 @@ module constants
 
 !    real,parameter :: beta = 0.6, p0 = 0.6, p1 = (1 - p0)/2, phi = 0, cutoffConc = 0.1, U = 2.0
     real,parameter :: beta = 0.6, p0 = 0.6, p1 = 0.30, phi = 0.0, cutoffConc = 0.1, U = 2.0
-    real :: pEvap = exp(-beta*27)
+    real :: pEvap = exp(-beta*evapExp)
     logical,parameter :: constSeed = .false., FBC = .false., topView = .true., noEvap = .false.
     integer :: sigma(L,L), numSpins(L/lambda,L/lambda,1:3)
     integer, allocatable :: numIters
 
-!    real,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !J_ORIGINAL SCALED
+    real,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !J_ORIGINAL SCALED
 !    real,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 2, 1, 0, 1, 2, 1, 0], shape(J_str))) !2
 
-    real,dimension(3, 3) :: J_str = transpose(reshape(0.5*[0, 1, 2, 1, 0, 1, 2, 1, 0], shape(J_str))) !2
+!    real,dimension(3, 3) :: J_str = transpose(reshape(0.5*[0, 1, 2, 1, 0, 1, 2, 1, 0], shape(J_str))) !2
 
-!    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*[0, 1, 0, 1, 0, 1, 0, 1, 0], shape(J_str))) !+1 and -1 are functionally the same.
+!    real,dimension(3, 3) :: J_str = transpose(reshape(0.5*[0, 1, 0, 1, 0, 1, 0, 1, 0], shape(J_str))) !+1 and -1 are functionally the same.
 
 !    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*[0, 1, 2, 1, -1, 1, 2, 1, 0], shape(J_str))) !Solvent likes each other - should behave more like liquid.
 !    real,dimension(3, 3) :: J_str = transpose(reshape((1/10.)*real(lambda)**(-2)*[0, 10, 20, 10, 5, 10, 20, 10, 0], shape(J_str))) !Solvent repels each other.
@@ -771,7 +771,7 @@ program main
         if(FBC .eqv. .true.) folderName = trim(folderName) // '-FBC'
         if(FBC .eqv. .false.) folderName = trim(folderName) // '-PBC'
     else
-        folderName = trim(folderName) // '-topView'
+        folderName = trim(folderName) // '-evapExp_' // trim(adjustl(num2str(evapExp))) // '-topView'
     endif
     folderName = trim(prefix) // trim(folderName)
     inquire(file = './' // trim(folderName), exist = folder_exists)
