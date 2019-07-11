@@ -10,7 +10,7 @@ module constants
     !beta is the reciprocal temperature; p0 is the concentration of zeroes at t = 0; p1 is the concentration of +1 (and -1 at the moment); phi is to volatility; cutoffConc is the final residual solvent concentration - set to negative number for infinite run-time.
     !To boolean constSeed uses a constant seed for the RNG (for debugging); FBC enables the free boundary conditions.
     !sigma is the spin matrix; numSpins is a tensor of rank 3 which stores the number of spins of each spices per cell.
-    integer,parameter :: L = 128, lambda = 1, evapExp = 27
+    integer,parameter :: L = 512, lambda = 1, evapExp = 27
 !    character(128) :: prefix = 'automatedRun/1024/'
     character(128) :: prefix = 'debug/'
 !    character(128) :: prefix = 'recreation/'
@@ -20,19 +20,22 @@ module constants
 !    character(128) :: prefix = 'topView/'
 !    character(128) :: prefix = 'topView-Emilio-slowerEvap/'
 
-    real,parameter :: beta = 0.2, p0 = 0, p1 = (1 - p0)/2, phi = 0, cutoffConc = -0.1, U = 2.0
+    real,parameter :: beta = 0.6, p0 = 0, p1 = (1 - p0)/2, phi = 0, cutoffConc = -0.1, U = 2.0
 !    real,parameter :: beta = 0.6, p0 = 0.6, p1 = 0.30, phi = 0.0, cutoffConc = 0.1, U = 2.0
     real :: pEvap = exp(-beta*evapExp)
-    logical,parameter :: constSeed = .false., FBC = .true., topView = .false., noEvap = .true.
+    logical,parameter :: constSeed = .false., FBC = .true., topView = .true., noEvap = .true.
     integer :: sigma(L,L), numSpins(L/lambda,L/lambda,1:3)
     integer, allocatable :: numIters
 
-    real,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !J_ORIGINAL SCALED
+!    real,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 6, 1, 0, 1, 6, 1, 0], shape(J_str))) !J_ORIGINAL SCALED
 !    real,dimension(3, 3) :: J_str = transpose(reshape([0, 1, 2, 1, 0, 1, 2, 1, 0], shape(J_str))) !2
 
 !    real,dimension(3, 3) :: J_str = transpose(reshape(0.5*[0, 1, 2, 1, 0, 1, 2, 1, 0], shape(J_str))) !2
 
 !    real,dimension(3, 3) :: J_str = transpose(reshape(0.5*[0, 1, 0, 1, 0, 1, 0, 1, 0], shape(J_str))) !+1 and -1 are functionally the same.
+
+!    real,dimension(3, 3) :: J_str = transpose(reshape([-1, 1, 1, 1, -1, 1, 1, 1, -1], shape(J_str))) !ISING
+    real,dimension(3, 3) :: J_str = transpose(reshape([-1, 0, 1, 0, 0, 0, 1, 0, -1], shape(J_str))) !ISING
 
 !    real,dimension(3, 3) :: J_str = transpose(reshape(real(lambda)**(-2)*[0, 1, 2, 1, -1, 1, 2, 1, 0], shape(J_str))) !Solvent likes each other - should behave more like liquid.
 !    real,dimension(3, 3) :: J_str = transpose(reshape((1/10.)*real(lambda)**(-2)*[0, 10, 20, 10, 5, 10, 20, 10, 0], shape(J_str))) !Solvent repels each other.
@@ -375,13 +378,13 @@ contains
             c(k) = 4./coordNum(k)
         enddo
 
-        !The energy between '1' and '2'.
-        do k = 1, 3
-            do b = 1, 3
-                E_current = E_current + (c(1)/c(2))*numSpinsA(k)*numSpinsB(b)*J_str(k,b)
-                E_proposed = E_proposed + (c(2)/c(1))*numSpinsAprop(k)*numSpinsBprop(b)*J_str(k,b)
-            enddo
-        enddo
+!        !The energy between '1' and '2'.
+!        do k = 1, 3
+!            do b = 1, 3
+!                E_current = E_current + (c(1)/c(2))*numSpinsA(k)*numSpinsB(b)*J_str(k,b)
+!                E_proposed = E_proposed + (c(2)/c(1))*numSpinsAprop(k)*numSpinsBprop(b)*J_str(k,b)
+!            enddo
+!        enddo
 
         !The energy between '1' and '3', '4', '5'.
         do h = 1, 5, 2
@@ -743,14 +746,14 @@ program main
         expon = 30 !HARDCODED
     elseif(L == 512) then
         expon = nint(13.8647*(L/lambda)**(0.1309))
-        expon = 29 !HARDCODED
+        expon = 26 !HARDCODED
         print '("Using HARDCODED exponent...",/,"Press ENTER to continue.")'
         read(stdin,*)
     elseif(L == 256) then
         expon = nint(11.3520*(L/lambda)**(0.1621))
-        expon = 20 !HARDCODED
-        print '("Using HARDCODED exponent...",/,"Press ENTER to continue.")'
-        read(stdin,*)
+        expon = 24 !HARDCODED
+!        expon = 2*log(real(L)) / log(2.)
+        print '("Using HARDCODED exponent...",/,"Press ENTER to continue.")'; read(stdin,*)
     elseif(L == 128) then
         expon = nint(7.1576*(L/lambda)**(0.2355))
     else
